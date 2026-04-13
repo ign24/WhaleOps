@@ -1,0 +1,122 @@
+\documentclass[11pt,a4paper,oneside]{article}
+
+% --- Paquetes Esenciales ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, shadows}
+
+% --- Estética de los Títulos ---
+\titleformat{\section}{\large\bfseries\color{darkblue}}{}{0em}{\thesection.\ }
+\definecolor{darkblue}{rgb}{0.0, 0.2, 0.4}
+
+% --- Estilos de Diagramas (TikZ) ---
+\tikzstyle{block} = [rectangle, draw, fill=blue!10, text width=6em, text centered, rounded corners, minimum height=3em, shadow]
+\tikzstyle{line} = [draw, -latex', thick]
+\tikzstyle{cloud} = [draw, ellipse, fill=red!10, node distance=3cm, minimum height=2em]
+
+% --- Metadatos ---
+\title{\textbf{Neuro-Arquitectura de los Sistemas Agénticos}\\ \Large De la Psiquiatría Clínica al Silicio de la IA: Un Framework de Rigurosidad Científica}
+\author{Ingeniería de Agentes Cognitivos \\ \textit{Whitepaper v2.0}}
+\date{Abril 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Este documento presenta una síntesis teórica y técnica sobre la convergencia entre la neurociencia cognitiva, la psiquiatría clínica y la ingeniería de agentes basados en modelos de lenguaje (LLMs). Se propone que la arquitectura de un agente moderno no es meramente una secuencia de llamadas a APIs, sino una réplica funcional de las funciones ejecutivas del cerebro humano. Exploramos marcos como la Teoría del Espacio de Trabajo Global (GWT), los Sistemas de Aprendizaje Complementarios (CLS) y el Cifrado Predictivo para proponer un modelo de diseño de agentes de alta fiabilidad.
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+\section{Introducción: La Herencia de la Agencia}
+La palabra \textbf{"agencia"} en el contexto de la Inteligencia Artificial no es un neologismo técnico, sino una transferencia conceptual de la psicología social. Según \textbf{Albert Bandura (1989)}, la agencia humana es la capacidad de ejercer influencia intencional sobre el funcionamiento propio.
+
+\begin{tcolorbox}[colback=blue!5,colframe=blue!75,title=La Tétrada de Bandura en IA]
+Cualquier framework agéntico (ej. LangGraph, CrewAI) debe satisfacer cuatro propiedades fundamentales:
+\begin{itemize}
+    \item \textbf{Intencionalidad:} El \textit{System Prompt} define el propósito.
+    \item \textbf{Previsión:} El \textit{Planning} permite anticipar estados futuros.
+    \item \textbf{Autorreactividad:} El \textit{ReAct Loop} permite ajustar la acción según el feedback.
+    \item \textbf{Autoreflexión:} El \textit{Critic Layer} evalúa la eficacia del acto.
+\end{itemize}
+\end{tcolorbox}
+
+\section{Analogías Funcionales: La Prótesis Prefrontal}
+En neurociencia, la \textbf{Corteza Prefrontal (CPF)} actúa como el "CEO del cerebro". En la ingeniería de agentes, el orquestador o la lógica de grafos asume este rol de control ejecutivo.
+
+\subsection{El Circuito Hipocampo-Neocórtex (CLS)}
+La teoría de los \textbf{Sistemas de Aprendizaje Complementarios (CLS)} explica cómo el cerebro aprende:
+\begin{enumerate}
+    \item \textbf{Hipocampo:} Aprendizaje rápido de episodios (RAG / Memoria Episódica).
+    \item \textbf{Neocórtex:} Aprendizaje lento de esquemas generales (Pesos del LLM / Parametric Memory).
+\end{enumerate}
+Esta separación es la solución biológica al \textit{Stability-Plasticity Dilemma}, el mismo que resolvemos en IA mediante el uso de bases de datos vectoriales para no tener que re-entrenar el modelo constantemente.
+
+\begin{center}
+\begin{tikzpicture}[node distance = 2cm, auto]
+    % Nodes
+    \node [block] (input) {Input / Percepción};
+    \node [block, below of=input] (exec) {Ejecutivo (CPF)};
+    \node [block, right of=exec, node distance=4cm] (mem) {Memoria Episódica (RAG)};
+    \node [block, left of=exec, node distance=4cm] (neocortex) {Memoria Paramétrica (LLM)};
+    
+    % Lines
+    \path [line] (input) -- (exec);
+    \path [line] (exec) -- (mem);
+    \path [line] (exec) -- (neocortex);
+    \path [line] (mem) -- (exec);
+    \path [line] (neocortex) -- (exec);
+\end{tikzpicture}
+\\ \textit{Figura 1: Arquitectura simplificada de un Sistema de Aprendizaje Complementario en Agentes.}
+\end{center}
+
+\section{Marcos Teóricos Avanzados}
+
+\subsection{Teoría del Espacio de Trabajo Global (GWT)}
+Propuesta por \textbf{Bernard Baars}, sugiere que la conciencia emerge de una "pizarra central" donde módulos especializados compiten por transmitir información. En sistemas Multi-Agente, esta arquitectura (\textit{Blackboard pattern}) es superior al paso de mensajes punto a punto, ya que mantiene una coherencia global del plan.
+
+\subsection{Cifrado Predictivo y Energía Libre}
+Siguiendo a \textbf{Karl Friston}, los sistemas inteligentes minimizan la \textit{Variational Free Energy} (sorpresa). Un agente robusto no solo predice el siguiente token, sino que \textbf{predice el resultado de sus acciones}. La divergencia entre la predicción y el resultado de una herramienta es el "Error de Predicción" que debe disparar la actualización del modelo interno del agente.
+
+\section{Psicopatología y Diagnóstico de Sistemas}
+Podemos diagnosticar fallos de agentes usando taxonomía psiquiátrica clínica:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Patología Clínica} & \textbf{Manifestación en IA} & \textbf{Causa Técnica} \\ \midrule
+Confabulación & Alucinaciones coherentes & Fallo en la verificación metacognitiva. \\
+Fallo de Eferencia & Loops de repetición & El agente no reconoce su propia acción. \\
+Estado Agéntico & Obediencia ciega dañina & Falta de guardrails morales internos. \\
+Disfunción Ejecutiva & Pérdida de contexto & Ventana de contexto saturada o corrupta. \\ \bottomrule
+\end{tabular}
+\caption{Mapeo de patologías psiquiátricas a fallos de ingeniería agéntica.}
+\end{table}
+
+\section{Implementación: El Caso del \texttt{cognitive-code-agent}}
+El análisis de la arquitectura del proyecto revela una implementación avanzada de estos principios:
+\begin{itemize}
+    \item \textbf{L0 (Working Memory):} Manejo de ventana de contexto con resumen dinámico.
+    \item \textbf{L1 (Episodic Memory):} Implementación en Redis para persistencia de 90 días.
+    \item \textbf{L2 (Semantic Memory):} Almacenamiento permanente en Milvus (Findings Store).
+\end{itemize}
+
+\section{Conclusión}
+La ingeniería de agentes está evolucionando desde el "prompting" hacia la **Arquitectura Cognitiva**. El éxito de un AI Engineer especialista en agentes dependerá de su capacidad para diseñar sistemas que imiten no solo el lenguaje, sino los procesos biológicos de planificación, memoria y auto-monitoreo.
+
+\end{document}

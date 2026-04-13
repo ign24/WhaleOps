@@ -1,0 +1,31 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Run lint, tests, and GGA (phase 1 advisory)
+        run: |
+          chmod +x ./scripts/quality-gate.sh
+          ./scripts/quality-gate.sh local

@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TRACES_PATH=${TRACES_PATH:-/app/traces/agent_traces.jsonl}
+      - OBS_COST_INPUT_PER_1K=${OBS_COST_INPUT_PER_1K:-0}
+      - OBS_COST_OUTPUT_PER_1K=${OBS_COST_OUTPUT_PER_1K:-0}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - "3000"
+    volumes:
+      - ./data:/app/data
+      - ../traces:/app/traces:ro
+    restart: unless-stopped

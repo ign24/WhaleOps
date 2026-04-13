@@ -1,0 +1,29 @@
+working:
+  enabled: true
+  max_history: 8
+  summarize_on_eviction: true
+  summary_max_tokens: 400
+  summary_llm_name: kimi_reader
+  compaction_char_threshold: 40000
+  compaction_message_threshold: 30
+  compaction_retain_recent: 8
+  compaction_cooldown_messages: 10
+
+episodic:
+  enabled: true
+  store: redis
+  max_sessions_retrieved: 5
+  ttl_days: 90
+
+semantic:
+  enabled: true
+  collection_name: domain_knowledge
+  max_knowledge_retrieved: 3
+
+auto_retrieval:
+  enabled: true
+  timeout_seconds: 2
+  include_episodic: true
+  include_findings: true
+  include_semantic: true
+  max_findings_retrieved: 3

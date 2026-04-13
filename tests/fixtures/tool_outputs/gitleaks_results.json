@@ -1,0 +1,7 @@
+[
+  {
+    "Description": "Generic API Key",
+    "File": "src/secrets.py",
+    "Secret": "AKIA1234567890ABCDEF"
+  }
+]

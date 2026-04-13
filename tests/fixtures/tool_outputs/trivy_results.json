@@ -1,0 +1,15 @@
+{
+  "Results": [
+    {
+      "Target": "requirements.txt",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2024-0001",
+          "PkgName": "example",
+          "InstalledVersion": "1.0.0",
+          "Severity": "HIGH"
+        }
+      ]
+    }
+  ]
+}

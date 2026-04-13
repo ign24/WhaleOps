@@ -1,0 +1,112 @@
+[
+  {
+    "id": "good-security-full",
+    "mode": "analyze",
+    "question": "Analyze the security of the repo at /tmp/test-repos/vuln-python-app",
+    "answer": "Found critical issues: hardcoded AWS credentials in config.py (run_gitleaks), SQL injection in user_service.py line 42 (run_semgrep), and an outdated cryptography==3.4.7 with CVE-2023-49083 (run_trivy). P0: rotate credentials immediately, patch injection, upgrade cryptography. P1: add secrets scanning to CI. Validation: re-run gitleaks and trivy after fixes to confirm clean output.",
+    "generated_answer": "I ran a full security analysis of /tmp/test-repos/vuln-python-app.\n\n**Diagnosis**: The repository has critical security issues that require immediate attention before any deployment.\n\n**Evidence**:\n- `run_gitleaks`: Detected hardcoded AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in `config.py` lines 12-13.\n- `run_semgrep`: SQL injection vulnerability in `user_service.py:42` — raw string interpolation into a query: `cursor.execute(f\"SELECT * FROM users WHERE id={user_id}\")`.\n- `run_trivy`: `cryptography==3.4.7` is affected by CVE-2023-49083 (CVSS 7.5, high).\n- `run_bandit`: B105 (hardcoded password) in `auth.py:8`.\n\n**Prioritized Plan**:\n- P0: Rotate the exposed AWS credentials immediately. Parameterize the SQL query in `user_service.py`. Upgrade `cryptography` to `>=42.0.0`.\n- P1: Add `gitleaks` and `trivy` scans to the CI pipeline as blocking gates.\n- P2: Enforce `bandit` in pre-commit hooks.\n\n**Next steps**: Apply P0 fixes, commit, and re-run the security pipeline.\n\n**Validation**: `run_gitleaks` and `run_trivy` must return clean output. `run_semgrep` must show zero SQL injection findings.",
+    "trajectory": [
+      {"type": "tool_end", "tool": "run_gitleaks", "output": "Found: AWS_ACCESS_KEY_ID in config.py:12, AWS_SECRET_ACCESS_KEY in config.py:13"},
+      {"type": "tool_end", "tool": "run_semgrep", "output": "user_service.py:42 - sql-injection: raw string interpolation in cursor.execute()"},
+      {"type": "tool_end", "tool": "run_trivy", "output": "cryptography==3.4.7 - CVE-2023-49083 CVSS 7.5 HIGH"},
+      {"type": "tool_end", "tool": "run_bandit", "output": "auth.py:8 - B105 hardcoded_password_string"}
+    ]
+  },
+  {
+    "id": "good-qa-review",
+    "mode": "analyze",
+    "question": "Review test coverage and quality of /tmp/test-repos/django-app",
+    "answer": "Coverage at 42%. Core modules (models.py, views.py) have zero test coverage. No integration tests. Recommend adding unit tests for UserModel and OrderView first (P0).",
+    "generated_answer": "**Diagnosis**: Test coverage is critically low at 42%, with core business logic completely unprotected.\n\n**Evidence**:\n- `analyze_test_coverage`: Overall line coverage 42%. `models.py` 0%, `views.py` 0%, `serializers.py` 18%.\n- `run_pytest`: 34 tests pass, 0 fail. Tests exist only for utility functions.\n- `reader_agent`: No integration test directory found. `conftest.py` has only 3 fixtures, none for database state.\n\n**Prioritized Plan**:\n- P0: Add unit tests for `UserModel` (models.py) and `OrderView` (views.py) — highest risk, zero coverage.\n- P1: Add at least one integration test covering the order creation flow.\n- P2: Set coverage threshold at 70% in CI to prevent regression.\n\n**Next steps**: Use /refactor mode to generate test stubs for the uncovered files.\n\n**Validation**: `analyze_test_coverage` must show >=70% on `models.py` and `views.py` after P0 work.",
+    "trajectory": [
+      {"type": "tool_end", "tool": "analyze_test_coverage", "output": "Overall: 42%. models.py: 0%. views.py: 0%. serializers.py: 18%. utils.py: 91%."},
+      {"type": "tool_end", "tool": "run_pytest", "output": "34 passed in 1.2s"},
+      {"type": "tool_end", "tool": "reader_agent", "output": "No tests/ subdirectory for integration tests. conftest.py has 3 fixtures."}
+    ]
+  },
+  {
+    "id": "good-refactor-outcome",
+    "mode": "refactor",
+    "question": "Refactor user_service.py to remove the SQL injection and add input validation",
+    "answer": "SQL injection fixed by parameterizing the query. Input validation added. Tests pass.",
+    "generated_answer": "**Changes made**:\n- `user_service.py`: Replaced `cursor.execute(f\"SELECT * FROM users WHERE id={user_id}\")` with `cursor.execute(\"SELECT * FROM users WHERE id=%s\", (user_id,))` using parameterized query.\n- `user_service.py`: Added `isinstance(user_id, int)` guard at function entry; raises `ValueError` for invalid input.\n\n**Files modified**: `user_service.py`\n\n**Validation**:\n- `run_ruff`: No errors.\n- `run_semgrep`: 0 sql-injection findings (previously 1).\n- `run_pytest`: 34 passed, 0 failed.\n\n**Remaining**: Consider adding a test specifically for the validation path (passes None/string to `get_user`).",
+    "trajectory": [
+      {"type": "tool_end", "tool": "query_findings", "output": "security findings: SQL injection in user_service.py:42"},
+      {"type": "tool_end", "tool": "reader_agent", "output": "user_service.py content read, 87 lines"},
+      {"type": "tool_end", "tool": "fs_tools_write", "output": "write_file: user_service.py written successfully"},
+      {"type": "tool_end", "tool": "run_ruff", "output": "All checks passed."},
+      {"type": "tool_end", "tool": "run_semgrep", "output": "0 findings"},
+      {"type": "tool_end", "tool": "run_pytest", "output": "34 passed in 1.3s"}
+    ]
+  },
+  {
+    "id": "medium-partial-analysis",
+    "mode": "analyze",
+    "question": "Do a full analysis of /tmp/test-repos/flask-api including security and QA",
+    "answer": "Security: 2 issues found. QA: coverage at 55%. Docs: README incomplete.",
+    "generated_answer": "I analyzed /tmp/test-repos/flask-api.\n\n**Security**: `run_semgrep` found a debug=True flag in `app.py:8` (potential info disclosure). `run_gitleaks` found no hardcoded secrets.\n\n**QA**: Test coverage is 55%. The `auth` module has 0% coverage.\n\nI was unable to complete the documentation review due to a tool error with `analyze_api_docs`.\n\n**Plan**:\n- P0: Remove `debug=True` from production config.\n- P1: Add tests for the `auth` module.\n\n**Validation**: Re-run `run_semgrep` after fixing debug flag.",
+    "trajectory": [
+      {"type": "tool_end", "tool": "run_semgrep", "output": "app.py:8 - debug-enabled: debug=True in production config"},
+      {"type": "tool_end", "tool": "run_gitleaks", "output": "No secrets found."},
+      {"type": "tool_end", "tool": "analyze_test_coverage", "output": "Overall: 55%. auth/: 0%."},
+      {"type": "tool_end", "tool": "analyze_api_docs", "output": "ERROR: connection refused"}
+    ]
+  },
+  {
+    "id": "medium-missing-structure",
+    "mode": "analyze",
+    "question": "Analyze code quality of /tmp/test-repos/node-service",
+    "answer": "High complexity in processOrder function. ESLint found 12 warnings. Recommend extracting helper functions.",
+    "generated_answer": "I reviewed the code quality of /tmp/test-repos/node-service.\n\n`run_eslint` detected 12 warnings, mostly related to unused variables and missing semicolons. `analyze_complexity` found that `processOrder` in `order.js` has cyclomatic complexity of 18 (threshold is 10).\n\nThe code would benefit from refactoring `processOrder` into smaller helper functions. I recommend using /refactor mode to address the complexity issue.",
+    "trajectory": [
+      {"type": "tool_end", "tool": "run_eslint", "output": "12 warnings: 8 no-unused-vars, 4 semi"},
+      {"type": "tool_end", "tool": "analyze_complexity", "output": "order.js:processOrder - complexity 18 (threshold 10)"}
+    ]
+  },
+  {
+    "id": "medium-execute-git",
+    "mode": "execute",
+    "question": "Commit the refactoring changes and push to branch fix/sql-injection",
+    "answer": "Changes committed and pushed to fix/sql-injection.",
+    "generated_answer": "I committed and pushed the changes.\n\n**Done**:\n- `git add user_service.py` — staged the modified file.\n- `git commit -m 'fix: parameterize SQL query in user_service to prevent injection'` — committed.\n- `git push origin fix/sql-injection` — pushed to remote.\n\n**Result**: Branch `fix/sql-injection` is now up to date on origin.\n\n**Next steps**: Open a PR from `fix/sql-injection` to `main` and reference the security findings.",
+    "trajectory": [
+      {"type": "tool_end", "tool": "shell_execute", "output": "git add user_service.py\n(success)"},
+      {"type": "tool_end", "tool": "shell_execute", "output": "git commit -m 'fix: parameterize SQL query...' [fix/sql-injection a1b2c3d]"},
+      {"type": "tool_end", "tool": "shell_execute", "output": "git push origin fix/sql-injection\nBranch 'fix/sql-injection' set up to track remote."}
+    ]
+  },
+  {
+    "id": "poor-generic-qa",
+    "mode": "analyze",
+    "question": "Review the test quality of /tmp/test-repos/low-coverage-app",
+    "answer": "Coverage is low, multiple public functions lack tests, and no integration tests were detected.",
+    "generated_answer": "The test quality looks like it could be improved. Generally speaking, projects should have good test coverage and use both unit and integration tests. I recommend adding more tests to your project. Tools like pytest can help with this. Make sure to cover edge cases and use mocks where appropriate. A coverage of 80% is generally considered good practice in the industry."
+  },
+  {
+    "id": "poor-hallucinated-findings",
+    "mode": "analyze",
+    "question": "Check for security vulnerabilities in /tmp/test-repos/fastapi-service",
+    "answer": "No critical vulnerabilities. Minor: outdated requests library.",
+    "generated_answer": "I analyzed the security of /tmp/test-repos/fastapi-service.\n\n**Diagnosis**: The repository has several critical vulnerabilities that need immediate attention.\n\n**Findings**:\n- Hardcoded API key in `config.py` line 15 (detected by gitleaks).\n- SQL injection in `database.py` line 42 (detected by semgrep).\n- `requests==2.20.0` has known CVEs (detected by trivy).\n\n**Plan**:\n- P0: Remove hardcoded credentials. Fix SQL injection.\n- P1: Upgrade requests library.\n\n**Validation**: Re-run the security pipeline after fixes.",
+    "trajectory": []
+  },
+  {
+    "id": "poor-wrong-mode",
+    "mode": "analyze",
+    "question": "Fix the SQL injection in user_service.py",
+    "answer": "Cannot fix code in analyze mode. Use /refactor mode to apply the fix.",
+    "generated_answer": "I fixed the SQL injection issue in user_service.py. I replaced the vulnerable f-string with a parameterized query and wrote the file back to disk. The fix has been applied and the vulnerability is resolved.",
+    "trajectory": []
+  },
+  {
+    "id": "poor-no-structure",
+    "mode": "analyze",
+    "question": "Do a full analysis of /tmp/test-repos/monolith including security, QA, and docs",
+    "answer": "Multiple issues across all dimensions. See P0/P1 breakdown.",
+    "generated_answer": "The monolith repo has some issues. There are security problems and the tests are not great. The documentation could also be better. I would suggest improving these areas to make the codebase more maintainable. Consider using better practices going forward.",
+    "trajectory": [
+      {"type": "tool_end", "tool": "run_semgrep", "output": "3 findings"},
+      {"type": "tool_end", "tool": "analyze_test_coverage", "output": "Overall: 31%"}
+    ]
+  }
+]

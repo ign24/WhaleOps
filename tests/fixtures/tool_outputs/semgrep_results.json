@@ -1,0 +1,12 @@
+{
+  "results": [
+    {
+      "path": "src/app.py",
+      "check_id": "python.lang.security.audit.subprocess-shell-true",
+      "extra": {
+        "severity": "WARNING",
+        "message": "Avoid shell=True"
+      }
+    }
+  ]
+}

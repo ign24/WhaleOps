@@ -1,0 +1,6 @@
+============================= test session starts ==============================
+collected 10 items
+
+tests/test_alpha.py .....F.E.s                                             [100%]
+
+===================== 6 passed, 1 failed, 1 errors, 1 skipped in 1.02s =====================

@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+
+# Environment variables
+.env
+
+# Observability outputs — keep directory structure, ignore generated files
+traces/*.jsonl
+traces/*.json
+logs/*.log
+logs/*.log.*
+
+# OS
+.DS_Store
+
+# Local tooling artifacts
+.gga
+.opencode/
+ui-cognitive/.opencode/

@@ -1,0 +1,76 @@
+[project]
+name = "cognitive-ops-agent"
+version = "0.0.1"
+description = "Single-agent VPS/infra operations assistant for Cognitive LATAM LLC (forked from cognitive-code-agent)"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "nvidia-nat==1.4.1",
+    "nvidia-nat-langchain==1.4.1",
+    "nvidia-nat-mcp==1.4.1",
+    "nvidia-nat-redis==1.4.1",
+    "httpx>=0.27",
+    "pymilvus>=2.5,<3",
+    "milvus-lite>=2.4,<3",
+    "pydantic>=2.6,<3",
+    "redis>=4.3.4,<5",
+    "flask>=3.0",
+    "apscheduler>=3.10",
+    "mcp[cli]>=1.26",
+]
+
+[project.scripts]
+mcp-server = "cognitive_code_agent.mcp_server:main"
+
+[project.optional-dependencies]
+dev = [
+    "coverage>=7.0",
+    "ruff>=0.5",
+    "radon>=6.0",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    # milvus-lite 2.5.x uses pkg_resources from setuptools<80; pin for test compat
+    "setuptools<80",
+]
+
+[project.entry-points.'nat.plugins']
+cognitive_code_agent = "cognitive_code_agent.register"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cognitive_code_agent = ["prompts/**/*.md", "prompts/**/*.yml"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["*.sh", "tests/fixtures/sample_repo/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["tests/fixtures"]
+markers = [
+    "unit: deterministic offline tests",
+    "integration: tool contract and boundary tests",
+    "e2e: end-to-end flows with real dependencies",
+    "real_tools: uses local external binaries",
+]
+addopts = "-m 'not e2e'"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+source = ["cognitive_code_agent"]
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = true

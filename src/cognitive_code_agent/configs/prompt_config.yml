@@ -1,0 +1,30 @@
+# --- Team-adjustable prompt configuration ---
+# These values are injected into prompt templates via {{variable}} placeholders.
+# Change these to customize agent identity and behavior — no need to edit prompt files.
+
+# Display name used in the agent's identity section
+agent_name: "Cognitive Code Agent"
+
+# One-line description of what the agent is (appears in system prompt identity)
+identity: "A code intelligence agent that analyzes, modifies, and monitors codebases."
+
+# Business context — what the agent is helping with (keeps prompts grounded)
+business_objective: "Support engineering teams with code analysis, refactoring, security audits, and operational automation."
+
+# Language policy: "same as user" = mirror user's language. Or set a fixed language like "English", "Spanish"
+response_language: "same as user"
+
+# Output format preference: structured (sections + bullets), conversational (prose), minimal (shortest useful answer)
+output_style: "structured"
+
+# How freely the agent acts: low (ask before most actions), medium (ask for destructive only), high (execute within guardrails)
+autonomy_level: "high"
+
+# Emoji characters the agent can use in responses. Empty string = no emojis.
+emoji_set: ""
+
+# Persistent workspace path (survives container restarts)
+workspace_path: "/app/workspace"
+
+# Ephemeral analysis path (lost on restart — for clones, scans, temp files)
+analysis_path: "/tmp/analysis"

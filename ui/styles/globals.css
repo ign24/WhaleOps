@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #aaa;
+}
+
+::-webkit-scrollbar-track:hover {
+  background-color: #f2f2f2;
+}
+
+::-webkit-scrollbar-corner {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html {
+  background: #f4f7f2;
+  font-family: NVIDIA-NALA, Arial, Helvetica, Sans-Serif;
+}
+
+@media (max-width: 720px) {
+  pre {
+    width: calc(100vw - 110px);
+  }
+}
+
+pre:has(div.codeblock) {
+  padding: 0;
+}
+
+details.intermediate-step-details {
+  max-width: 100%;
+}
+
+details.intermediate-step-details pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+details.intermediate-step-details code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* add the code bellow */
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+/* Streaming message animations — applied only to the active assistant message */
+.message-streaming p {
+  animation: streamReveal 420ms ease-out both;
+}
+
+.message-streaming h1,
+.message-streaming h2,
+.message-streaming h3 {
+  animation: streamReveal 350ms ease-out both;
+}
+
+.message-streaming pre {
+  animation: streamReveal 500ms ease-out both;
+}
+
+.message-streaming blockquote {
+  animation: streamReveal 420ms ease-out both;
+}
+
+.message-streaming ul,
+.message-streaming ol {
+  animation: streamReveal 380ms ease-out both;
+}
+
+.message-streaming table {
+  animation: streamFade 450ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-streaming p,
+  .message-streaming h1,
+  .message-streaming h2,
+  .message-streaming h3,
+  .message-streaming pre,
+  .message-streaming blockquote,
+  .message-streaming ul,
+  .message-streaming ol,
+  .message-streaming table {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

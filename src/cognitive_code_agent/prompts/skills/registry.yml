@@ -1,0 +1,200 @@
+version: 1
+default_max_active_skills: 2
+default_max_skill_chars: 8000
+total_skill_budget_chars: 16000
+priority_order:
+  - security
+  - correctness
+  - reliability
+  - docs
+  - style
+
+skills:
+  - id: tdd
+    enabled: true
+    category: correctness
+    priority: 12
+    file: src/cognitive_code_agent/prompts/skills/tdd.md
+    required_tools:
+      - run_pytest
+    triggers:
+      - implement
+      - feature
+      - new function
+      - fix bug
+      - write code
+      - add
+      - create
+      - build
+      - implementar
+      - crear
+      - construir
+      - agregar
+
+  - id: refactoring
+    enabled: true
+    category: correctness
+    priority: 15
+    file: src/cognitive_code_agent/prompts/skills/refactoring.md
+    required_tools:
+      - refactor_gen
+      - write_file
+      - edit_file
+      - run_ruff
+      - run_eslint
+    triggers:
+      - refactor
+      - refactoring
+      - refactorizar
+      - rewrite
+      - restructure
+      - reestructurar
+      - reorganize
+      - reorganizar
+      - clean up
+      - limpiar codigo
+
+  - id: security-review
+    enabled: true
+    category: security
+    priority: 10
+    file: src/cognitive_code_agent/prompts/skills/security-review.md
+    required_tools:
+      - run_semgrep
+      - run_trivy
+      - run_gitleaks
+      - run_bandit
+    triggers:
+      - security
+      - vulnerability
+      - vulnerabilities
+      - cve
+      - cves
+      - secret
+      - secrets
+      - owasp
+      - hardening
+      - audit
+
+  - id: code-reviewer
+    enabled: true
+    category: correctness
+    priority: 20
+    file: src/cognitive_code_agent/prompts/skills/code-reviewer.md
+    required_tools:
+      - get_diff
+      - run_ruff
+      - run_eslint
+      - analyze_complexity
+    triggers:
+      - code review
+      - pr review
+      - pull request
+      - lint
+      - complexity
+      - code smell
+      - diff
+      - quick review
+      - quick analysis
+
+  - id: senior-qa
+    enabled: true
+    category: reliability
+    priority: 30
+    file: src/cognitive_code_agent/prompts/skills/senior-qa.md
+    required_tools:
+      - run_pytest
+      - run_jest
+      - analyze_test_coverage
+    triggers:
+      - test
+      - tests
+      - qa
+      - coverage
+      - flaky
+      - regression
+      - failing
+
+  - id: technical-writer
+    enabled: true
+    category: docs
+    priority: 40
+    file: src/cognitive_code_agent/prompts/skills/technical-writer.md
+    required_tools:
+      - check_readme
+      - analyze_docstrings
+      - analyze_api_docs
+    triggers:
+      - docs
+      - documentation
+      - readme
+      - docstring
+      - onboarding
+      - api docs
+
+  - id: debugger
+    enabled: true
+    category: reliability
+    priority: 50
+    file: src/cognitive_code_agent/prompts/skills/debugger.md
+    required_tools:
+      - shell_execute
+    triggers:
+      - debug
+      - bug
+      - error
+      - crash
+      - stack trace
+      - not working
+
+  - id: api-design
+    enabled: true
+    category: correctness
+    priority: 25
+    file: src/cognitive_code_agent/prompts/skills/api-design.md
+    required_tools: []
+    triggers:
+      - api design
+      - api review
+      - endpoint
+      - endpoints
+      - rest api
+      - api contract
+      - pagination
+      - rate limiting
+      - versioning
+      - status code
+      - status codes
+      - openapi
+      - swagger
+      - api route
+      - api routes
+
+  - id: email-marketing-bible
+    enabled: true
+    category: execution
+    priority: 15
+    file: src/cognitive_code_agent/prompts/skills/email-marketing-bible.md
+    required_tools: []
+    triggers:
+      - email
+      - emails
+      - newsletter
+      - deliverability
+      - dmarc
+      - dkim
+      - spf
+      - campaign
+      - automation flow
+      - abandoned cart
+      - welcome series
+      - win-back
+      - segmentation
+      - ctr
+      - cto
+      - copywriting
+      - esp
+      - klaviyo
+      - mailchimp
+      - activecampaign
+      - nitrosend

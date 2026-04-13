@@ -1,0 +1,9 @@
+{
+  "results": [
+    {
+      "filename": "src/app.py",
+      "issue_severity": "MEDIUM",
+      "issue_text": "Use of assert detected"
+    }
+  ]
+}

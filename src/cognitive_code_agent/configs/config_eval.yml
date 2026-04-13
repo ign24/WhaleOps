@@ -1,0 +1,33 @@
+llms:
+  # Evaluador RAGAS: razonamiento estructurado para juicios de calidad
+  # nvidia/llama-3.3-nemotron-super-49b-v1.5 — NVIDIA-tuned, determinístico
+  specialist_llm:
+    _type: nim
+    model_name: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    temperature: 0.1
+    top_p: 0.85
+    max_tokens: 4096
+    api_key: $NVIDIA_API_KEY
+
+eval:
+  general:
+    output_dir: .tmp/eval_output/
+    dataset:
+      _type: json
+      file_path: data/eval_data.json
+  evaluators:
+    goal_fulfillment:
+      _type: ragas
+      metric: AnswerAccuracy
+      llm_name: specialist_llm
+    logical_consistency:
+      _type: ragas
+      metric: ResponseGroundedness
+      llm_name: specialist_llm
+    context_relevance:
+      _type: ragas
+      metric: ContextRelevance
+      llm_name: specialist_llm
+    agent_judge:
+      _type: agent_judge
+      llm_name: specialist_llm
