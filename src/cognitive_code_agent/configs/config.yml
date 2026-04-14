@@ -32,9 +32,9 @@ general:
         - "*"
 
 llms:
-  devstral:
+  llama33:
     _type: nim
-    model_name: mistralai/devstral-2-123b-instruct-2512
+    model_name: meta/llama-3.3-70b-instruct
     temperature: 0.1
     top_p: 0.9
     max_tokens: 32768
@@ -91,7 +91,7 @@ functions:
 
 workflow:
   _type: tool_calling_agent
-  llm_name: devstral
+  llm_name: llama33
   max_history: 8
   max_iterations: 20
   tool_call_timeout_seconds: 30
@@ -113,7 +113,7 @@ workflow:
   default_mode: ops
   modes:
     ops:
-      llm_name: devstral
+      llm_name: llama33
       max_recovery_rounds: 2
       prompt_path: src/cognitive_code_agent/prompts/system/ops.md
       max_iterations: 20
@@ -136,7 +136,7 @@ workflow:
         - get_notes
 
     chat:
-      llm_name: devstral
+      llm_name: llama33
       max_recovery_rounds: 1
       prompt_path: src/cognitive_code_agent/prompts/system/chat.md
       max_iterations: 3

@@ -26,8 +26,8 @@ interface DriftDot {
 }
 
 const COLORS = {
-  dark:  { dot: "rgba(150,180,255,0.7)",  line: [150, 180, 255] as [number, number, number] },
-  light: { dot: "rgba(30,50,140,0.65)",   line: [30,  50,  140] as [number, number, number] },
+  dark: { dot: "rgba(91,200,245,0.72)", line: [91, 200, 245] as [number, number, number] },
+  light: { dot: "rgba(26,58,107,0.66)", line: [26, 58, 107] as [number, number, number] },
 };
 
 export const DotGridBackground = () => {

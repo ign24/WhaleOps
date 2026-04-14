@@ -59,8 +59,6 @@ export function WhaleBanner({ status, latencyMs }: WhaleBannerProps) {
       return;
     }
 
-    card.style.setProperty("--mx", "50%");
-    card.style.setProperty("--my", "50%");
     card.style.setProperty("--rx", "0deg");
     card.style.setProperty("--ry", "0deg");
   };
@@ -96,7 +94,7 @@ export function WhaleBanner({ status, latencyMs }: WhaleBannerProps) {
 
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100"
           style={{
             background:
               "radial-gradient(220px circle at var(--mx) var(--my), color-mix(in srgb, white 20%, transparent) 0%, transparent 60%)",
