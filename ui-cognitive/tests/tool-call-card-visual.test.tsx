@@ -38,6 +38,46 @@ describe("ToolCallCard - context chips", () => {
   });
 });
 
+describe("ToolCallCard - container chip", () => {
+  it("renders container chip when containerRef is provided", () => {
+    const { container } = render(
+      <ToolCallCard containerRef="nginx" />,
+    );
+    const chips = container.querySelectorAll("span.rounded-full");
+    const texts = Array.from(chips).map((c) => c.textContent ?? "");
+    expect(texts.some((t) => t.includes("nginx"))).toBe(true);
+  });
+
+  it("renders container chip from container_id when containerRef provided", () => {
+    const { container } = render(
+      <ToolCallCard containerRef="abc123def" />,
+    );
+    const chips = container.querySelectorAll("span.rounded-full");
+    const texts = Array.from(chips).map((c) => c.textContent ?? "");
+    expect(texts.some((t) => t.includes("abc123def"))).toBe(true);
+  });
+
+  it("does not render container chip when containerRef is not provided", () => {
+    const { container } = render(
+      <ToolCallCard returnCodeSummary="rc=0 (success)" />,
+    );
+    const chips = container.querySelectorAll("span.rounded-full");
+    // only the rc chip should be present, no container ref chip
+    const texts = Array.from(chips).map((c) => c.textContent ?? "");
+    expect(texts.every((t) => !t.includes("nginx") && !t.includes("container"))).toBe(true);
+  });
+
+  it("does not render sandboxPath chip", () => {
+    const { container } = render(
+      <ToolCallCard toolArgs={{ container_name: "web" }} containerRef="web" />,
+    );
+    const chips = container.querySelectorAll("span.rounded-full");
+    const texts = Array.from(chips).map((c) => c.textContent ?? "");
+    // no chip with "sandbox" or path-like content from old sandboxPath prop
+    expect(texts.every((t) => !t.toLowerCase().includes("sandbox"))).toBe(true);
+  });
+});
+
 describe("ToolCallCard - args table", () => {
   it("renders args inside a <dl> element", () => {
     const { container } = render(

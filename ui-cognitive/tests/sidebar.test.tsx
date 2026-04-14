@@ -43,6 +43,10 @@ vi.mock("@/components/layout/mcp-servers", () => ({
   McpServers: () => null,
 }));
 
+vi.mock("@/components/layout/cron-jobs", () => ({
+  CronJobs: () => null,
+}));
+
 import { Sidebar } from "@/components/layout/sidebar";
 
 describe("Sidebar", () => {
@@ -59,6 +63,15 @@ describe("Sidebar", () => {
   it("renders available sessions", () => {
     render(<Sidebar isAdmin={false} />);
     expect(screen.getByText("Main")).toBeTruthy();
+  });
+
+  it("renders logout action next to users in admin footer", () => {
+    const logoutAction = vi.fn(async () => undefined);
+
+    render(<Sidebar isAdmin logoutAction={logoutAction} />);
+
+    expect(screen.getByRole("link", { name: "Usuarios" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cerrar sesión" })).toBeTruthy();
   });
 
 

@@ -126,15 +126,15 @@ export const DotGridBackground = () => {
       for (let i = 0; i < N; i++) {
         for (let j = i + 1; j < N; j++) {
           const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
-          if (d < 260) {
-            const distanceFactor = 1 - d / 260;
+          if (d < 150) {
+            const distanceFactor = 1 - d / 150;
             const shimmer = 0.82 + 0.18 * Math.sin((pts[i].phase + pts[j].phase) * 0.5);
-            const lineAlpha = Math.max(0.03, Math.min(0.34, distanceFactor * 0.3 * shimmer));
+            const lineAlpha = Math.max(0.08, Math.min(0.55, distanceFactor * 0.5 * shimmer));
             ctx.beginPath();
             ctx.moveTo(pts[i].x, pts[i].y);
             ctx.lineTo(pts[j].x, pts[j].y);
             ctx.strokeStyle = `rgba(${r},${g},${b},${lineAlpha})`;
-            ctx.lineWidth = 0.4;
+            ctx.lineWidth = 0.7;
             ctx.stroke();
           }
         }

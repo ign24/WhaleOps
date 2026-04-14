@@ -5,7 +5,6 @@ import { PanelRightClose, PanelRightOpen } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { ActivityPanel } from "@/components/activity/activity-panel";
-import { FolderCard } from "@/components/activity/folder-card";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ActivityEntry } from "@/types/chat";
@@ -206,12 +205,9 @@ export const ChatSessionLayout = ({ sessionKey }: ChatSessionLayoutProps) => {
                 animate={{ x: 0 }}
                 exit={{ x: ACTIVITY_PANEL_WIDTH }}
                 transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
-                className="flex h-full min-h-0 flex-col gap-6"
+                className="flex h-full min-h-0 flex-col"
                 style={{ width: ACTIVITY_PANEL_WIDTH }}
               >
-                <div className="shrink-0 max-h-[520px]">
-                  <FolderCard isLive={panelMode === "live" && isLiveSending} />
-                </div>
                 <div className="flex-1 min-h-0">
                   <ActivityPanel
                     entries={panelEntries}
@@ -257,11 +253,8 @@ export const ChatSessionLayout = ({ sessionKey }: ChatSessionLayoutProps) => {
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
-                className="flex h-full w-full flex-col gap-4 py-2 pr-2"
+                className="flex h-full w-full flex-col py-2 pr-2"
               >
-                <div className="shrink-0 max-h-[40%]">
-                  <FolderCard isLive={panelMode === "live" && isLiveSending} />
-                </div>
                 <div className="flex-1 min-h-0">
                   <ActivityPanel
                     entries={panelEntries}

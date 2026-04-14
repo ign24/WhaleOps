@@ -2,23 +2,24 @@
 @import "katex/dist/katex.min.css";
 
 :root {
-  --bg: #e8e6e1;
-  --surface: #f2f0eb;
-  --shadow-light: rgba(255, 253, 247, 0.85);
-  --shadow-dark: rgba(156, 150, 140, 0.35);
-  --primary: #2e2e2e;
-  --primary-hover: #171717;
-  --text-primary: #1e1b4b;
-  --text-secondary: #6b7280;
-  --text-on-primary: #ffffff;
+  /* WhaleOps light — white base, navy accents */
+  --bg: #f6f9fc;
+  --surface: #ffffff;
+  --shadow-light: rgba(255, 255, 255, 0.9);
+  --shadow-dark: rgba(26, 58, 107, 0.10);
+  --primary: #5bc8f5;
+  --primary-hover: #122d55;
+  --text-primary: #0a0a0a;
+  --text-secondary: #4a5568;
+  --text-on-primary: #0f172a;
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
-  --border: rgba(120, 110, 95, 0.1);
-  --scrollbar-track: color-mix(in srgb, var(--surface) 90%, var(--text-primary) 10%);
-  --scrollbar-thumb-from: color-mix(in srgb, var(--primary) 70%, white 30%);
-  --scrollbar-thumb-to: color-mix(in srgb, var(--primary) 78%, black 22%);
-  --scrollbar-thumb-hover-from: color-mix(in srgb, var(--primary-hover) 72%, white 28%);
+  --border: rgba(26, 58, 107, 0.10);
+  --scrollbar-track: color-mix(in srgb, var(--surface) 90%, var(--primary) 10%);
+  --scrollbar-thumb-from: color-mix(in srgb, var(--primary) 60%, white 40%);
+  --scrollbar-thumb-to: color-mix(in srgb, var(--primary) 75%, black 25%);
+  --scrollbar-thumb-hover-from: color-mix(in srgb, var(--primary-hover) 65%, white 35%);
   --scrollbar-thumb-hover-to: color-mix(in srgb, var(--primary-hover) 80%, black 20%);
   --chat-enhance-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --chat-enhance-stagger-step: 24ms;
@@ -32,20 +33,22 @@
 }
 
 .dark {
+  /* WhaleOps dark — Vercel black base, sky blue accents */
   --bg: #0a0a0a;
   --surface: #111111;
-  --shadow-light: rgba(255, 255, 255, 0.03);
-  --shadow-dark: rgba(0, 0, 0, 0.45);
-  --primary: #525252;
-  --primary-hover: #3f3f46;
+  --shadow-light: rgba(91, 200, 245, 0.04);
+  --shadow-dark: rgba(0, 0, 0, 0.55);
+  --primary: #5bc8f5;
+  --primary-hover: #7dd4f8;
   --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --border: rgba(255, 255, 255, 0.1);
+  --text-secondary: #94a3b8;
+  --text-on-primary: #0a0a0a;
+  --border: rgba(91, 200, 245, 0.12);
   --scrollbar-track: color-mix(in srgb, var(--surface) 88%, #000000 12%);
-  --scrollbar-thumb-from: color-mix(in srgb, var(--surface) 55%, #6b7280 45%);
-  --scrollbar-thumb-to: color-mix(in srgb, var(--surface) 72%, #3f3f46 28%);
-  --scrollbar-thumb-hover-from: color-mix(in srgb, var(--surface) 46%, #9ca3af 54%);
-  --scrollbar-thumb-hover-to: color-mix(in srgb, var(--surface) 64%, #52525b 36%);
+  --scrollbar-thumb-from: color-mix(in srgb, var(--primary) 30%, var(--surface) 70%);
+  --scrollbar-thumb-to: color-mix(in srgb, var(--primary) 20%, var(--surface) 80%);
+  --scrollbar-thumb-hover-from: color-mix(in srgb, var(--primary) 45%, var(--surface) 55%);
+  --scrollbar-thumb-hover-to: color-mix(in srgb, var(--primary) 35%, var(--surface) 65%);
 }
 
 body {
@@ -61,32 +64,32 @@ body {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(95% 65% at 50% -20%, rgba(125, 140, 170, 0.22), transparent 70%),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.5), rgba(232, 230, 225, 0.72));
+    radial-gradient(95% 65% at 50% -20%, rgba(91, 200, 245, 0.12), transparent 70%),
+    linear-gradient(to bottom, rgba(248, 250, 252, 0.95), rgba(246, 249, 252, 0.98));
 }
 
 .vercel-static-background::before {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.3;
+  opacity: 0.35;
   background-image:
-    linear-gradient(to right, rgba(17, 24, 39, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(17, 24, 39, 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgba(26, 58, 107, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(26, 58, 107, 0.07) 1px, transparent 1px);
   background-size: 26px 26px;
 }
 
 .dark .vercel-static-background {
   background:
-    radial-gradient(85% 55% at 50% -18%, rgba(113, 113, 122, 0.2), transparent 70%),
-    linear-gradient(to bottom, rgba(9, 9, 11, 0.8), rgba(3, 3, 5, 0.92));
+    radial-gradient(85% 55% at 50% -18%, rgba(26, 58, 107, 0.28), transparent 70%),
+    linear-gradient(to bottom, rgba(10, 10, 10, 0.95), rgba(5, 5, 8, 0.98));
 }
 
 .dark .vercel-static-background::before {
-  opacity: 0.5;
+  opacity: 0.45;
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    linear-gradient(to right, rgba(91, 200, 245, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(91, 200, 245, 0.05) 1px, transparent 1px);
 }
 
 .logo-dark {
@@ -364,6 +367,11 @@ body {
   text-align: right;
 }
 
+:root .message-bubble-user {
+  background-color: #5bc8f5 !important;
+  color: #0a0a0a !important;
+}
+
 .message-bubble-user .markdown-body a {
   color: inherit;
 }
@@ -501,6 +509,10 @@ body {
 
 .styled-button-full {
   width: 100%;
+}
+
+.login-submit-button::after {
+  width: 18%;
 }
 
 .styled-button-icon {
@@ -712,73 +724,79 @@ body {
   gap: 0.12rem;
 }
 
-/* From Uiverse.io by ClawHack1 */
+/* From Uiverse.io by satyamchaudharydev */
 .agent-loader {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 30px;
-  height: 30px;
+  --loader: rgb(49, 180, 255);
+  --loader-size: 12px;
   position: relative;
+  width: 48px;
+  height: 20px;
+  overflow: hidden;
+  transition: .5s;
+  letter-spacing: 2px;
 }
 
-.agent-loader::before {
-  content: "";
+.agent-loader span {
   position: absolute;
-  inset: -2px;
-  border-radius: 50%;
 }
 
-.agent-loader__inner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
+.agent-loader span:nth-child(1) {
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: var(--loader-size);
+  background: linear-gradient(90deg, transparent, var(--loader));
+  animation: loader-anim1 1s linear infinite;
 }
 
-.agent-loader__block {
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  margin: 1px;
-  background-color: #111827;
-  animation: agent-loader-pulse 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+@keyframes loader-anim1 {
+  0% { left: -100%; }
+  50%, 100% { left: 100%; }
 }
 
-.dark .agent-loader__block {
-  background-color: #fff;
+.agent-loader span:nth-child(2) {
+  top: -100%;
+  right: 0;
+  width: var(--loader-size);
+  height: 100%;
+  background: linear-gradient(180deg, transparent, var(--loader));
+  animation: loader-anim2 1s linear infinite;
+  animation-delay: .25s;
 }
 
-.agent-loader__block:nth-child(1) {
-  animation-delay: 0.1s;
+@keyframes loader-anim2 {
+  0% { top: -100%; }
+  50%, 100% { top: 100%; }
 }
 
-.agent-loader__block:nth-child(2) {
-  animation-delay: 0.2s;
+.agent-loader span:nth-child(3) {
+  bottom: 0;
+  right: -100%;
+  width: 100%;
+  height: var(--loader-size);
+  background: linear-gradient(270deg, transparent, var(--loader));
+  animation: loader-anim3 1s linear infinite;
+  animation-delay: .5s;
 }
 
-.agent-loader__block:nth-child(3) {
-  animation-delay: 0.3s;
+@keyframes loader-anim3 {
+  0% { right: -100%; }
+  50%, 100% { right: 100%; }
 }
 
-.agent-loader__block:nth-child(4) {
-  animation-delay: 0.4s;
+.agent-loader span:nth-child(4) {
+  bottom: -100%;
+  left: 0;
+  width: var(--loader-size);
+  height: 100%;
+  background: linear-gradient(360deg, transparent, var(--loader));
+  animation: loader-anim4 1s linear infinite;
+  animation-delay: .75s;
 }
 
-.agent-loader__block:nth-child(5) {
-  animation-delay: 0.5s;
-}
-
-.agent-loader__block:nth-child(6) {
-  animation-delay: 0.6s;
-}
-
-.agent-loader__block:nth-child(7) {
-  animation-delay: 0.7s;
-}
-
-.agent-loader__block:nth-child(8) {
-  animation-delay: 0.8s;
+@keyframes loader-anim4 {
+  0% { bottom: -100%; }
+  50%, 100% { bottom: 100%; }
 }
 
 .agent-loader__caption {
@@ -789,20 +807,6 @@ body {
 
 .dark .agent-loader__caption {
   color: #a1a1aa;
-}
-
-@keyframes agent-loader-pulse {
-  0% {
-    transform: scale(1);
-  }
-
-  20% {
-    transform: scale(1, 2.5);
-  }
-
-  40% {
-    transform: scale(1);
-  }
 }
 
 .help-card-border {

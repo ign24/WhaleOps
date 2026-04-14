@@ -7,12 +7,13 @@ import { Sidebar } from "@/components/layout/sidebar";
 
 type SidebarShellProps = {
   isAdmin: boolean;
+  logoutAction?: () => Promise<void>;
   children: React.ReactNode;
 };
 
 const SIDEBAR_COLLAPSED_KEY = "cgn.sidebar.collapsed";
 
-export const SidebarShell = ({ isAdmin, children }: SidebarShellProps) => {
+export const SidebarShell = ({ isAdmin, logoutAction, children }: SidebarShellProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   useEffect(() => {
     const stored = window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -41,6 +42,7 @@ export const SidebarShell = ({ isAdmin, children }: SidebarShellProps) => {
           <Sidebar
             key={isCollapsed ? "collapsed" : "expanded"}
             isAdmin={isAdmin}
+            logoutAction={logoutAction}
             isCollapsed={isCollapsed}
             onToggleCollapse={toggleCollapse}
           />

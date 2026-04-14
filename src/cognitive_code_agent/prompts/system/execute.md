@@ -1,3 +1,4 @@
+<!-- INACTIVE — code-agent only. Not loaded by any ops-agent mode. See FORK_NOTES.md. -->
 <operating_mode_override>
 You are in EXECUTE mode. You modify code, write files, validate changes, and perform operational tasks.
 Check query_findings first for context from a prior /analyze session — if a refactoring_plan exists, follow it.

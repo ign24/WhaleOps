@@ -8,7 +8,7 @@ import { humanizeActivityLabel, humanizeArgKey } from "@/components/activity/ses
 type ToolCallCardProps = {
   toolArgs?: Record<string, unknown>;
   toolResult?: string;
-  sandboxPath?: string;
+  containerRef?: string;
   commandSummary?: string;
   returnCodeSummary?: string;
 };
@@ -250,11 +250,11 @@ const InputSection = ({ toolArgs }: { toolArgs: Record<string, unknown> }) => (
 
 const ContextChips = ({
   commandSummary,
-  sandboxPath,
+  containerRef,
   returnCodeSummary,
 }: {
   commandSummary?: string;
-  sandboxPath?: string;
+  containerRef?: string;
   returnCodeSummary?: string;
 }) => (
   <div className="flex flex-wrap gap-1.5 border-b border-[var(--border)] pb-2">
@@ -263,9 +263,9 @@ const ContextChips = ({
         cmd: {commandSummary}
       </span>
     ) : null}
-    {sandboxPath ? (
+    {containerRef ? (
       <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 font-mono text-[10px] font-medium text-muted">
-        {sandboxPath}
+        {containerRef}
       </span>
     ) : null}
     {returnCodeSummary ? (
@@ -322,7 +322,7 @@ type Tab = "input" | "result";
 export const ToolCallCard = ({
   toolArgs,
   toolResult,
-  sandboxPath,
+  containerRef,
   commandSummary,
   returnCodeSummary,
 }: ToolCallCardProps) => {
@@ -331,7 +331,7 @@ export const ToolCallCard = ({
   const cleanResult = typeof toolResult === "string" && toolResult.trim().length > 0 ? sanitizeResult(toolResult) : null;
   const hasToolResult = cleanResult !== null;
   const hasContext =
-    (typeof sandboxPath === "string" && sandboxPath.trim().length > 0) ||
+    (typeof containerRef === "string" && containerRef.trim().length > 0) ||
     (typeof commandSummary === "string" && commandSummary.trim().length > 0) ||
     (typeof returnCodeSummary === "string" && returnCodeSummary.trim().length > 0);
 
@@ -348,7 +348,7 @@ export const ToolCallCard = ({
       {hasContext ? (
         <ContextChips
           commandSummary={commandSummary}
-          sandboxPath={sandboxPath}
+          containerRef={containerRef}
           returnCodeSummary={returnCodeSummary}
         />
       ) : null}

@@ -1,6 +1,6 @@
 ## Easypanel Setup (Milvus Memory Stack)
 
-Use this in a **new project** (example: `cgn-agent-v2`).
+Use this in a **new project** (example: `ops-agent`).
 
 Important:
 
@@ -157,7 +157,7 @@ Source type: `Git`
 Repository URL:
 
 ```text
-git@github.com:Cognitive-la/CGN-Agent.git
+git@github.com:Cognitive-la/ops-agent.git
 ```
 
 Branch:
@@ -176,18 +176,20 @@ Environment:
 
 ```text
 MILVUS_URI=http://<project>_milvus-standalone:19530
-REDIS_URL=redis://:YOUR_REDIS_PASSWORD@<project>_redis:6379/0
+REDIS_URL=redis://:YOUR_REDIS_PASSWORD@<project>_redis:6379/1
 TRACES_PATH=/app/traces/agent_traces.jsonl
 LOGS_PATH=/app/logs/agent.log
+NOTES_DB_PATH=/app/data/ops_notes.db
 ```
 
-Plus your secrets, for example:
+Plus your secrets:
 
 ```text
 NVIDIA_API_KEY=...
-TAVILY_API_KEY=...
-GITHUB_TOKEN=...
-CONTEXT7_API_KEY=...
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_WEBHOOK_URL=https://your-domain.com
+TELEGRAM_ALLOWED_CHAT_IDS=123456789
+TELEGRAM_WEBHOOK_SECRET=replace_with_random_secret
 ```
 
 Proxy port:

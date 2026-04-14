@@ -1,0 +1,11 @@
+[
+  {
+    "id": "admin-1",
+    "name": "Admin CGN",
+    "email": "admin@cognitive.la",
+    "passwordHash": "$2b$12$YP0Nz/DE5M.CmroMyxL4yOyJzUVPmIxEKyoezN1RWEbSEjGAte0jW",
+    "role": "admin",
+    "active": true,
+    "createdAt": "2026-03-02T00:00:00.000Z"
+  }
+]

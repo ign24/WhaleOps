@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowRight, BookOpenText, Bug, GitBranch, Search, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { Activity, AlertTriangle, ArrowRight, BookOpen, CalendarClock, FileText, History, Search, Server, Terminal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, type Variants } from "motion/react";
+import { WhaleBanner } from "@/components/chat/whale-banner";
 
 interface ChatHelpCardProps {
   onPromptSelect: (prompt: string) => void;
@@ -73,56 +74,68 @@ function useLiveMetrics(): LiveMetrics {
 const steps = [
   {
     number: "01",
-    icon: GitBranch,
-    title: "Conectá el repositorio",
-    description: "Pegá una URL de GitHub o un path local. El agente clona y mapea el proyecto.",
+    icon: Terminal,
+    title: "Consultá el estado",
+    description: "Preguntá sobre containers, servicios o el host. El agente consulta Docker en tiempo real.",
   },
   {
     number: "02",
     icon: Search,
     title: "El agente investiga",
-    description: "Navega archivos, ejecuta herramientas y construye contexto profundo sobre el código.",
+    description: "Inspecciona containers, obtiene logs y detecta anomalías automáticamente.",
   },
   {
     number: "03",
-    icon: Zap,
-    title: "Insights accionables",
-    description: "Findings priorizados, refactors, reportes de seguridad y documentación generada.",
+    icon: AlertTriangle,
+    title: "Escalado con severidad",
+    description: "Findings con labels INFO / WARN / CRIT y comandos manuales sugeridos.",
   },
 ];
 
 const capabilities = [
   {
-    icon: Sparkles,
-    title: "Code Review Técnico",
-    description: "Detecta problemas de calidad, complejidad y mantenibilidad con análisis de diffs.",
-    prompt: "Analizá la calidad del código y detectá problemas en este repositorio: ",
+    icon: Activity,
+    title: "Estado de containers",
+    description: "Lista todos los containers con su estado actual: running, exited o failed.",
+    prompt: "¿Qué containers están corriendo en este host?",
   },
   {
-    icon: Bug,
-    title: "QA y Testing",
-    description: "Ejecuta pruebas, revisa cobertura y propone mejoras para reducir regresiones.",
-    prompt: "Revisá la cobertura de tests y sugerí mejoras para este repositorio: ",
+    icon: FileText,
+    title: "Análisis de logs",
+    description: "Obtiene los últimos N líneas de logs y detecta errores, OOM y panics.",
+    prompt: "Mostrá los logs del container ",
   },
   {
-    icon: ShieldCheck,
-    title: "Auditoría de Seguridad",
-    description: "Escanea vulnerabilidades, secretos expuestos y dependencias con riesgo.",
-    prompt: "Realizá una auditoría de seguridad completa de este repositorio: ",
+    icon: Server,
+    title: "Inspección detallada",
+    description: "Revisa exit codes, restart counts y políticas de restart de un container.",
+    prompt: "Inspeccioná el container ",
   },
   {
-    icon: BookOpenText,
-    title: "Documentación",
-    description: "Evalúa docstrings, README y API docs para mejorar onboarding técnico.",
-    prompt: "Evaluá y generá documentación técnica para este repositorio: ",
+    icon: History,
+    title: "Historial de issues",
+    description: "Consulta findings pasados para detectar problemas recurrentes en el host.",
+    prompt: "¿Qué problemas recurrentes tiene este host?",
+  },
+  {
+    icon: CalendarClock,
+    title: "Tareas programadas",
+    description: "Crea, lista o cancela tareas cron recurrentes de monitoreo.",
+    prompt: "Listá las tareas programadas activas",
+  },
+  {
+    icon: BookOpen,
+    title: "Registro de incidentes",
+    description: "Guarda y consulta findings estructurados asociados a containers.",
+    prompt: "¿Qué problemas recurrentes tiene este host?",
   },
 ];
 
 const starters = [
-  "Analizá este repositorio: https://github.com/",
-  "¿Qué problemas de seguridad tiene este proyecto?",
-  "Generá un informe de calidad de código",
-  "Refactorizá el módulo de autenticación",
+  "¿Qué containers están corriendo en este host?",
+  "¿Algún container tiene errores o está caído?",
+  "Mostrá los logs del container nginx",
+  "Inspeccioná el container postgres",
 ];
 
 const container: Variants = {
@@ -148,7 +161,6 @@ const item: Variants = {
   },
 };
 
-// Helper: animación de entrada explícita por delay (no hereda opacity del padre)
 const EASE: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
 
 function fadeUp(delay: number, duration = 0.32) {
@@ -188,60 +200,21 @@ export const ChatHelpCard = ({ onPromptSelect }: ChatHelpCardProps) => {
   const m = useLiveMetrics();
   const isLoading = m.status === "loading";
 
-  const statusColor =
-    m.status === "online"
-      ? "bg-emerald-500"
-      : m.status === "offline"
-        ? "bg-red-500"
-        : "bg-[var(--border)] animate-pulse";
-
-  const statusLabel =
-    m.status === "online"
-      ? "online"
-      : m.status === "offline"
-        ? "offline"
-        : "conectando";
-
   return (
     <motion.section
       className="landing-hero mx-auto w-full max-w-2xl space-y-8 py-6 sm:py-8"
-      aria-label="CGN-Agent — Bienvenida"
+      aria-label="Ops Agent — Bienvenida"
       variants={container}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
-      {/* Hero */}
-      <motion.div className="landing-hero__hero space-y-4" variants={item}>
-        <div className="space-y-1">
-          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1">
-            <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} aria-hidden="true" />
-            <span className="font-mono text-[10px] font-medium text-[var(--text-secondary)]">
-              v2.0 — {statusLabel}
-              {m.latencyMs !== null && (
-                <span className="ml-1 opacity-60">{m.latencyMs}ms</span>
-              )}
-            </span>
-          </div>
+      {/* Hero — banner + live stats */}
+      <motion.div className="landing-hero__hero space-y-3" variants={item}>
+        <WhaleBanner status={m.status} latencyMs={m.latencyMs} />
 
-          <h1 className="text-[2rem] font-bold leading-[1.1] tracking-tight sm:text-[2.5rem]">
-            <span className="landing-hero-title">
-              Inteligencia de código
-            </span>
-            <br />
-            <span className="landing-hero-title">
-              para tu repositorio
-            </span>
-          </h1>
-        </div>
-
-        <p className="max-w-md text-sm leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
-          Agente autónomo que analiza, refactoriza, audita y documenta repositorios completos
-          usando herramientas especializadas — sin intervención manual.
-        </p>
-
-        {/* Live stats */}
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
+        {/* Live stats (below the banner) */}
+        <div className="flex flex-wrap gap-x-6 gap-y-2 px-1">
           <div className="flex items-baseline gap-1">
             <MetricValue
               value={m.totalRequests !== null ? String(m.totalRequests) : null}
@@ -267,7 +240,7 @@ export const ChatHelpCard = ({ onPromptSelect }: ChatHelpCardProps) => {
         </div>
       </motion.div>
 
-      {/* How it works — cada tarjeta entra con delay explícito */}
+      {/* How it works */}
       <div className="landing-hero__steps space-y-4">
         <motion.div {...fadeUp(0.30)}>
           <SectionDivider label="Cómo funciona" />
@@ -301,7 +274,7 @@ export const ChatHelpCard = ({ onPromptSelect }: ChatHelpCardProps) => {
         </div>
       </div>
 
-      {/* Capabilities — ídem */}
+      {/* Capabilities */}
       <div className="landing-hero__capabilities space-y-4">
         <motion.div {...fadeUp(0.60)}>
           <SectionDivider label="Capacidades" />
@@ -316,7 +289,7 @@ export const ChatHelpCard = ({ onPromptSelect }: ChatHelpCardProps) => {
                 type="button"
                 onClick={() => onPromptSelect(cap.prompt)}
                 className="group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-4 text-left transition-all duration-150 hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border)_65%)] hover:bg-[color-mix(in_srgb,var(--surface)_94%,var(--primary)_6%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"
-                aria-label={`Usar modo: ${cap.title}`}
+                aria-label={`Usar capacidad: ${cap.title}`}
               >
                 <div
                   className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent opacity-40 transition-opacity duration-150 group-hover:opacity-80"

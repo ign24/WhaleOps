@@ -1,12 +1,9 @@
-"""NAT plugin entry point for tool registration."""
-
-from __future__ import annotations
+"""NAT plugin entry point — ops-agent tool registration."""
 
 import logging
 import os
 from collections.abc import Awaitable, Callable
 from typing import Any
-
 
 logger = logging.getLogger(__name__)
 
@@ -14,23 +11,11 @@ logger = logging.getLogger(__name__)
 def _make_cron_dispatch_callback(
     stream_fn: Callable[..., Awaitable[Any]] | None,
 ) -> Callable[[str], Awaitable[None]]:
-    """Create a cron callback that dispatches prompts through builder stream_fn.
-
-    Args:
-        stream_fn: Builder stream function to dispatch through.
-                   If None, the callback will log a warning and return.
-
-    Returns:
-        Async callable suitable for ``cron_tools.init_scheduler(run_callback=...)``.
-    """
-
     async def _dispatch(prompt: str) -> None:
         if stream_fn is None:
             logger.warning("cron_tools: stream_fn not captured — skipping cron dispatch")
             return
-
         logger.info("cron_tools: dispatching scheduled job — prompt=%r", prompt[:80])
-
         try:
             await stream_fn(prompt, session_id="cron:scheduled")
         except Exception as exc:
@@ -45,15 +30,6 @@ def _make_cron_dispatch_callback(
 
 
 def _apply_mcp_enum_value_patch() -> None:
-    """Ensure MCP-generated Pydantic models serialize enum values as strings.
-
-    NAT builds tool input schemas from MCP JSON schemas. Enum fields become Python
-    Enum types, and downstream conversion may pass Enum instances back into
-    validation paths that expect literal strings. Enabling `use_enum_values` on
-    each generated model keeps arguments JSON-compatible (`"open"`, `"desc"`, etc.)
-    and prevents avoidable validation retries.
-    """
-
     try:
         from pydantic import ConfigDict
         from nat.plugins.mcp import utils as mcp_utils
@@ -81,25 +57,9 @@ def _apply_mcp_enum_value_patch() -> None:
     setattr(mcp_utils, "_cognitive_enum_patch_applied", True)
 
 
-_apply_mcp_enum_value_patch()
-
-
 def _apply_nim_timeout_patch(total_seconds: int = 900) -> None:
-    """Extend aiohttp client timeout for NIM LLM calls.
-
-    The ``langchain_nvidia_ai_endpoints`` package creates ``aiohttp.ClientSession``
-    without an explicit ``ClientTimeout``, inheriting aiohttp's default (~300 s).
-    Long NIM responses (heavy tool-calling chains, large code generation) can exceed
-    this and raise ``asyncio.TimeoutError``, killing the workflow mid-response.
-
-    This patch wraps ``_NVIDIAClient._create_async_session`` to inject a generous
-    ``ClientTimeout`` so that the HTTP layer never cuts off a response prematurely.
-    The agent's own ``tool_call_timeout_seconds`` and ``max_iterations`` remain the
-    authoritative budget controls.
-    """
     try:
         import aiohttp
-
         from langchain_nvidia_ai_endpoints._common import _NVIDIAClient
     except Exception:
         return
@@ -119,19 +79,7 @@ def _apply_nim_timeout_patch(total_seconds: int = 900) -> None:
     logger.info("Applied NIM aiohttp timeout patch: %ds", total_seconds)
 
 
-_apply_nim_timeout_patch()
-
-
 def _apply_cron_lifespan_patch() -> None:
-    """Inject scheduler start/stop into NAT's FastAPI configure lifecycle.
-
-    NAT's FastApiFrontEndPluginWorker.configure() runs inside the FastAPI
-    lifespan context manager just before the server begins accepting requests.
-    Wrapping it here ensures APScheduler starts after all routes are registered
-    and stops cleanly when the server shuts down.
-
-    The patch is idempotent — applying it twice is a no-op.
-    """
     try:
         from nat.front_ends.fastapi.fastapi_front_end_plugin_worker import (
             FastApiFrontEndPluginWorker,
@@ -150,15 +98,13 @@ def _apply_cron_lifespan_patch() -> None:
         from cognitive_code_agent.tools import cron_tools
 
         if cron_tools._scheduler is None:
-            redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-
+            redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/1")
             stream_fn = getattr(builder, "stream_fn", None)
             if not callable(stream_fn):
                 logger.warning(
                     "cron_tools: builder.stream_fn unavailable — cron jobs will be log-only"
                 )
                 stream_fn = None
-
             cron_callback = _make_cron_dispatch_callback(stream_fn)
             cron_tools.init_scheduler(redis_url=redis_url, run_callback=cron_callback)
 
@@ -167,11 +113,13 @@ def _apply_cron_lifespan_patch() -> None:
             scheduler.start()
             logger.info("cron_tools: APScheduler started (Redis job store)")
 
-        from cognitive_code_agent.workspace_api import register_workspace_routes
         from cognitive_code_agent.jobs_api import register_jobs_routes
 
-        register_workspace_routes(app)
         register_jobs_routes(app)
+
+        from cognitive_code_agent.ops_api import register_ops_routes
+
+        register_ops_routes(app)
 
         app.add_event_handler(
             "shutdown",
@@ -184,37 +132,105 @@ def _apply_cron_lifespan_patch() -> None:
     logger.info("Applied cron lifespan patch to FastApiFrontEndPluginWorker.configure")
 
 
+def _apply_telegram_patch() -> None:
+    try:
+        from nat.front_ends.fastapi.fastapi_front_end_plugin_worker import (
+            FastApiFrontEndPluginWorker,
+        )
+    except Exception:
+        return
+
+    if getattr(FastApiFrontEndPluginWorker.configure, "_cognitive_telegram_patched", False):
+        return
+
+    original_configure = FastApiFrontEndPluginWorker.configure
+
+    async def _patched_configure(self, app, builder):
+        await original_configure(self, app, builder)
+
+        from cognitive_code_agent.telegram.routes import register_telegram_routes
+
+        register_telegram_routes(app, builder)
+
+    _patched_configure._cognitive_telegram_patched = True
+    FastApiFrontEndPluginWorker.configure = _patched_configure
+    logger.info("Applied Telegram route patch to FastApiFrontEndPluginWorker.configure")
+
+
+_apply_mcp_enum_value_patch()
+_apply_nim_timeout_patch()
 _apply_cron_lifespan_patch()
+_apply_telegram_patch()
 
-
-from cognitive_code_agent.agents import safe_tool_calling_agent  # noqa: E402
-from cognitive_code_agent.eval import register as agent_judge_evaluator  # noqa: E402
-from cognitive_code_agent.tools import clone_tools  # noqa: E402
-from cognitive_code_agent.tools import code_review_tools  # noqa: E402
-from cognitive_code_agent.tools import docs_tools  # noqa: E402
-from cognitive_code_agent.tools import findings_store  # noqa: E402
-from cognitive_code_agent.tools import qa_tools  # noqa: E402
-from cognitive_code_agent.tools import report_tools  # noqa: E402
-from cognitive_code_agent.tools import refactor_gen  # noqa: E402
-from cognitive_code_agent.tools import security_tools  # noqa: E402
-from cognitive_code_agent.tools import shell_tools  # noqa: E402
+# ---------------------------------------------------------------------------
+# Ops-agent tool registration — imports trigger @register_function decorators.
+# Each import is isolated so a failure in one module doesn't abort the rest.
+# ---------------------------------------------------------------------------
 from cognitive_code_agent.tools import cron_tools  # noqa: E402
-from cognitive_code_agent.tools import spawn_agent  # noqa: E402
-from cognitive_code_agent import workspace_api  # noqa: E402
+from cognitive_code_agent.tools import ops_tools  # noqa: E402
+from cognitive_code_agent.tools import sqlite_tools  # noqa: E402
+from cognitive_code_agent import telegram  # noqa: E402
+
+try:
+    from cognitive_code_agent.tools import qa_tools  # noqa: F401
+except Exception as _e:
+    logger.warning("qa_tools failed to load: %s", _e)
+    qa_tools = None
+
+try:
+    from cognitive_code_agent.tools import clone_tools  # noqa: F401
+except Exception as _e:
+    logger.warning("clone_tools failed to load: %s", _e)
+    clone_tools = None
+
+try:
+    from cognitive_code_agent.tools import code_review_tools  # noqa: F401
+except Exception as _e:
+    logger.warning("code_review_tools failed to load: %s", _e)
+    code_review_tools = None
+
+try:
+    from cognitive_code_agent.tools import security_tools  # noqa: F401
+except Exception as _e:
+    logger.warning("security_tools failed to load: %s", _e)
+    security_tools = None
+
+try:
+    from cognitive_code_agent.tools import docs_tools  # noqa: F401
+except Exception as _e:
+    logger.warning("docs_tools failed to load: %s", _e)
+    docs_tools = None
+
+try:
+    from cognitive_code_agent.tools import shell_tools  # noqa: F401
+except Exception as _e:
+    logger.warning("shell_tools failed to load: %s", _e)
+    shell_tools = None
+
+try:
+    from cognitive_code_agent.tools import spawn_agent  # noqa: F401
+except Exception as _e:
+    logger.warning("spawn_agent failed to load: %s", _e)
+    spawn_agent = None
+
+try:
+    from cognitive_code_agent.tools import findings_store  # noqa: F401
+
+    _findings_store_loaded = True
+except Exception as _e:
+    logger.warning("findings_store failed to load — query_findings unavailable: %s", _e)
+    _findings_store_loaded = False
 
 __all__ = [
-    "safe_tool_calling_agent",
-    "agent_judge_evaluator",
-    "clone_tools",
     "cron_tools",
+    "ops_tools",
+    "sqlite_tools",
+    "telegram",
     "qa_tools",
-    "report_tools",
-    "refactor_gen",
+    "clone_tools",
     "code_review_tools",
     "security_tools",
     "docs_tools",
     "shell_tools",
     "spawn_agent",
-    "findings_store",
-    "workspace_api",
 ]

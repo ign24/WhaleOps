@@ -106,8 +106,8 @@ def init_scheduler(
     _scheduler = AsyncIOScheduler(
         jobstores={
             "default": RedisJobStore(
-                jobs_key="cgn:apscheduler:jobs",
-                run_times_key="cgn:apscheduler:run_times",
+                jobs_key="ops:apscheduler:jobs",
+                run_times_key="ops:apscheduler:run_times",
                 **_redis_kwargs(redis_url),
             ),
             "volatile": MemoryJobStore(),

@@ -2,11 +2,14 @@
 
 > Internal reference for contributors. Documents what each dependency provides,
 > how the layers compose, and where custom code overrides framework behavior.
+>
+> **Note:** This project is `cognitive-ops-agent`, forked from `cognitive-code-agent` on 2026-04-13.
+> The Python package namespace remains `cognitive_code_agent` pending a future rename. See `FORK_NOTES.md`.
 
 ## Dependency Chain
 
 ```
-cognitive-code-agent (this project)
+cognitive-ops-agent (this project)
   |
   +-- nvidia-nat 1.4.1               Core framework
   |     +-- pydantic, fastapi, networkx, aiohttp ...
@@ -20,7 +23,8 @@ cognitive-code-agent (this project)
   +-- nvidia-nat-redis 1.4.1         RedisEditor for episodic memory
   +-- pymilvus / milvus-lite          Vector store client
   +-- redis                           Cache client
-  +-- httpx                           Async HTTP
+  +-- httpx                           Async HTTP (dormant D03 client)
+  +-- docker >=7.0                    Docker Python SDK — ops tools connect via local socket
   +-- pydantic >=2.6                  Config and data models
 ```
 
@@ -132,7 +136,8 @@ Everything in `src/cognitive_code_agent/` is ours:
 | `tools/` | Custom tool modules (security scanners, code review, docs, shell, clone, refactoring, findings store) |
 | `tools/safety.py` | Deterministic shell safety classifier (no LLM in the safety path) |
 | `tools/findings_store.py` | Milvus-backed vector store with circuit breaker and Redis query cache |
-| `tools/cron_tools.py` | Agent-callable cron scheduler: APScheduler `AsyncIOScheduler` with `RedisJobStore` (namespace `cgn:apscheduler:*`). Exposes `schedule_task` tool (create / list / cancel). Scheduler lifecycle tied to NAT FastAPI lifespan via lifespan patch. |
+| `tools/cron_tools.py` | Agent-callable cron scheduler: APScheduler `AsyncIOScheduler` with `RedisJobStore` (namespace `ops:apscheduler:*`, Redis DB 1). Exposes `schedule_task` tool (create / list / cancel). Scheduler lifecycle tied to NAT FastAPI lifespan via lifespan patch. |
+| `tools/ops_tools.py` | Ops tools (Tier 0): `list_containers`, `get_container_logs`, `inspect_container`. All use `docker.from_env()` to connect to the local Docker socket on D09. |
 | `routing/query_classifier.py` | Pure-regex intent classifier (`IntentClass` enum + `QueryClassifier.classify()`), zero-LLM, runs as Tier 0 before mode resolution |
 | `register.py` | NAT plugin entry point + three monkey-patches (MCP enum fix, NIM timeout extension, cron lifespan startup/shutdown) |
 
@@ -152,8 +157,8 @@ of message attributes (like `tool_calls[0]["id"]`) persists across nodes.
 
 ## Multi-Mode Architecture
 
-One workflow, three pre-built graphs. Mode selection goes through two stages: a
-Tier 0 intent classifier, then prefix-based resolution.
+One workflow, two pre-built graphs (ops + chat). Mode selection goes through two
+stages: a Tier 0 intent classifier, then prefix-based resolution.
 
 ```
 User message
@@ -166,26 +171,27 @@ User message
         +-- UNKNOWN intent (or explicit prefix present) --> fall through
         |
         v
-  resolve_mode()  -->  mode="execute", cleaned="fix alerts on repo"
+  resolve_mode()  -->  mode="ops" (default)
         |
         v
   mode_runtimes[mode]  -->  ModeRuntime(graph, model_name, tool_names)
         |
         v
   Skill activation uses ORIGINAL message (with prefix) for trigger matching
-  [suppressed when mode in {"chat", "analyze"}]
+  [suppressed when mode == "chat"]
   LLM receives CLEANED message (without prefix) in the conversation
 ```
 
 Each mode has its own:
 
-| Mode | LLM | Tool groups | System Prompt | Max Iterations | Max History |
+| Mode | LLM | Tools | System Prompt | Max Iterations | Max History |
 |---|---|---|---|---|---|
-| `analyze` (default) | Devstral 2-123B | 6 (spawn orchestrator + fs/github/clone + findings tools) | `analyze.md` | 30 | 8 |
-| `execute` | Devstral 2-123B | 16 (schedule/report/codegen/write fs/lint/tests/findings/shell/github/context7/web) | `execute.md` | 40 | 8 |
-| `chat` | Kimi K2 (`kimi_reader`) | 2 (query_findings, fs_tools) | `chat.md` | 3 | 4 |
+| `ops` (default) | Devstral 2-123B | 6 (list_containers, get_container_logs, inspect_container, schedule_task, save_note, get_notes) | `ops.md` | 20 | 8 |
+| `chat` | Devstral 2-123B | 1 (get_notes) | `chat.md` | 3 | 4 |
 
-`/refactor` remains available as a compatibility alias and is mapped to `execute` during `resolve_mode()`.
+**Tier 0 — Read Only (current bootstrap):** ops tools only issue read-equivalent Docker API calls. Write operations (restart, redeploy, exec) require a future Tier 1 change.
+
+Code-agent modes (`analyze`, `execute`) are inactive in this fork. Their prompt files remain on disk (marked `INACTIVE`) for reference. See `FORK_NOTES.md`.
 
 Modes are defined in `config.yml` under `workflow.modes` and compiled into
 separate `CompiledStateGraph` instances at startup.
@@ -195,12 +201,10 @@ separate `CompiledStateGraph` instances at startup.
 Runtime guardrails are non-terminating: denied calls produce `ToolMessage` feedback and the loop continues.
 Per-mode `max_tool_calls_per_request` enforces deterministic budgets and should be tuned from traces:
 
-- `analyze`: `spawn_agent=4`, `clone_repository=2`, `persist_findings=1`
-- `execute`: `shell_execute=8`, `persist_findings=1`
-- `chat`: `query_findings=2`
+- `ops`: `list_containers=3`, `get_container_logs=5`, `inspect_container=5`, `save_note=10`, `get_notes=3`
+- `chat`: `get_notes=2`
 
-When limits are hit, the agent should consolidate evidence and return structured partial output
-(`Verified`, `Unverified`, `Blocked By`, `Next Steps`) instead of terminating the request.
+When limits are hit, the agent should consolidate evidence and return partial output instead of terminating the request.
 
 ## Streaming Architecture
 
@@ -269,21 +273,6 @@ Request arrives
 | Episodic | Redis (RedisEditor) | 90 days | Cross-session memory ("last time on this repo...") |
 | Findings | Milvus (pymilvus) | Permanent | Historical analysis results per repo |
 
-### Filesystem Working Memory
-
-The filesystem has two persistence tiers, independent of the in-memory layers above:
-
-| Path | Tier | Retention | Usage |
-|---|---|---|---|
-| `/tmp/analysis` | Ephemeral sandbox | Lost on container restart | Temporary clones, scan artifacts, intermediate outputs during analysis runs |
-| `/app/workspace` | Persistent working memory | Survives restarts | Full refactor lifecycle outputs, reports, packaged artifacts, repositories cloned for retention |
-
-**Memory layer distinction:** Filesystem paths (`/tmp/analysis`, `/app/workspace`) are working memory — they hold the actual files being operated on. The findings store (Milvus) and episodic store (Redis) are separate memory layers for structured knowledge. They are complementary and do not replace each other.
-
-When `clone_repository` is invoked, the `destination_root` parameter selects the tier:
-- `destination_root="analysis"` (default) → `/tmp/analysis/<dest_name>` — ephemeral
-- `destination_root="workspace"` → `/app/workspace/<dest_name>` — persistent
-
 Configuration is resolved by `load_memory_config()` with precedence:
 `src/cognitive_code_agent/configs/memory.yml` (dedicated) -> legacy `memory`
 or `cognitive_memory` blocks in `config.yml` -> `MemoryConfig()` defaults.
@@ -314,26 +303,18 @@ Skills have a two-layer structure:
 
 ## MCP Integration
 
-Four MCP servers configured as `function_groups` in `config.yml`. All use
-**stdio transport** (spawned as child processes via `npx`).
+MCP function groups from the code-agent fork remain in `config.yml` as dormant
+infrastructure. They are not active in the ops-agent because the code-agent tool
+surface (`fs_tools`, `github_tools`, `context7_tools`) is not used by any active mode.
 
-NAT's `nvidia-nat-mcp` package manages the MCP lifecycle:
-
-1. At startup, NAT spawns each MCP server as a subprocess
-2. Tools are discovered via MCP's `tools/list` protocol
-3. Tool names get prefixed with the group name: `fs_tools__read_text_file`
-4. Skill `required_tools` use suffix matching: `write_file` matches `fs_tools_write__write_file`
-
-| Group | Server | Allowed Paths | Timeout |
-|---|---|---|---|
-| `fs_tools` | `@modelcontextprotocol/server-filesystem` | `/tmp/analysis`, `/app/workspace` | 30s |
-| `fs_tools_write` | `@modelcontextprotocol/server-filesystem` | `/tmp/analysis`, `/app/workspace` | 30s |
-| `github_tools` | `@modelcontextprotocol/server-github` | GitHub REST API | 60s |
-| `context7_tools` | `@upstash/context7-mcp` | Library documentation | 30s |
+If MCP tools are added in a future change, they follow the code-agent pattern:
+- Stdio transport (spawned as child processes via `npx`)
+- Tool names prefixed with the group name: `fs_tools__read_text_file`
+- Skill `required_tools` use suffix matching
 
 ## Monkey-Patches
 
-`register.py` applies three patches at import time:
+`register.py` applies four patches at import time:
 
 1. **MCP enum fix** — Forces `use_enum_values=True` on MCP-generated Pydantic
    models so enum fields serialize as strings, not Enum objects.
@@ -341,14 +322,21 @@ NAT's `nvidia-nat-mcp` package manages the MCP lifecycle:
 2. **NIM timeout extension** — Extends aiohttp client timeout from 300s to 900s
    for NIM LLM calls. Devstral with 32K output tokens can take several minutes.
 
-3. **Cron lifespan bridge** — Integrates scheduler startup/shutdown with NAT
+3. **Cron lifespan bridge** — Integrates APScheduler startup/shutdown with NAT
    FastAPI app lifespan so persistent cron jobs are restored and cleanly stopped.
+   Also registers `/api/jobs` endpoints and `/api/ops` endpoints at startup.
+
+4. **Telegram route patch** — Registers the Telegram webhook endpoint
+   (`/telegram/webhook`) on the FastAPI app and calls `bot.set_webhook` at
+   startup if `TELEGRAM_BOT_TOKEN` and `TELEGRAM_WEBHOOK_URL` are set.
 
 ## File Map
 
 ```
 src/cognitive_code_agent/
-  register.py                  NAT plugin entry point + patches
+  register.py                  NAT plugin entry point + four monkey-patches
+  ops_api.py                   FastAPI router: GET /api/ops/status, GET /api/ops/notes
+  jobs_api.py                  FastAPI router: GET /api/jobs (cron job list)
   agents/
     safe_tool_calling_agent.py   Custom workflow: modes, skills, memory, streaming
   configs/
@@ -368,36 +356,36 @@ src/cognitive_code_agent/
   prompts/
     composer.py                  Skill loader, trigger matching, analysis mode detection
     system/
-      base.md                    Default system prompt (identity, policies, protocols)
-      analyze.md                 Read-only analysis mode prompt
-      execute.md                 Git operations mode prompt
-      chat.md                    Lightweight chat mode prompt (greetings, capability questions)
-      security_agent.md          Security specialist subagent prompt
-      qa_agent.md                QA specialist subagent prompt
-      review_agent.md            Code-review specialist subagent prompt
-      docs_agent.md              Documentation specialist subagent prompt
+      base.md                    Ops operator identity, tier policy, memory policy
+      ops.md                     Primary ops mode prompt (tool guidance, output format, escalation)
+      chat.md                    Lightweight chat mode prompt (ops identity, capability questions)
+      analyze.md                 INACTIVE — code-agent only (see FORK_NOTES.md)
+      execute.md                 INACTIVE — code-agent only (see FORK_NOTES.md)
     skills/
       registry.yml               Skill definitions (triggers, required_tools, priority)
-      refactoring.md             Refactoring methodology and path policies
-      security-review.md         Security audit checklist
-      code-reviewer.md           Code review guidelines
-      senior-qa.md               QA and test coverage
-      technical-writer.md        Documentation audit
-      debugger.md                Debugging methodology
-      api-design.md              REST API design patterns
-      email-marketing-bible.md   Email deliverability
+      [code-agent skills]        Dormant — not triggered without code-agent tool surface
+  telegram/
+    __init__.py                  Package init
+    bot.py                       Bot instance, webhook handler, concurrency guard
+    routes.py                    register_telegram_routes(app, builder) — startup + endpoint
+    session_bridge.py            Allowlist check (TELEGRAM_ALLOWED_CHAT_IDS) + session ID derivation
   tools/
+    ops_tools.py                 Ops tools: list_containers, get_container_logs, inspect_container
+    sqlite_tools.py              Structured memory: save_note, get_notes (SQLite, NOTES_DB_PATH)
+    cron_tools.py                APScheduler cron scheduler (ops: namespace, DB 1)
+    d03_client.py                Dormant HTTP client for future D03 REST API integration
     common.py                    Shared: sandbox enforcement, subprocess runner, redaction
     safety.py                    Deterministic shell command classifier (3 tiers)
     cache.py                     Redis-backed embedding/query cache
-    clone_tools.py               Secure GitHub clone with PAT
-    code_review_tools.py         ruff, eslint, radon, git diff
-    docs_tools.py                Docstring coverage, README audit, OpenAPI detection
-    qa_tools.py                  pytest, jest, coverage, knowledge search
-    security_tools.py            semgrep, trivy, gitleaks, bandit
-    shell_tools.py               General shell execution with safety tiers
-    refactor_gen.py              LLM-powered code refactoring (Devstral)
     findings_store.py            Milvus vector store with circuit breaker
+    clone_tools.py               INACTIVE — code-agent only
+    code_review_tools.py         INACTIVE — code-agent only
+    docs_tools.py                INACTIVE — code-agent only
+    qa_tools.py                  INACTIVE — code-agent only
+    security_tools.py            INACTIVE — code-agent only
+    shell_tools.py               INACTIVE — code-agent only
+    refactor_gen.py              INACTIVE — code-agent only
+    spawn_agent.py               INACTIVE — code-agent only
   data/
-    qa_knowledge/                Seed knowledge files for query_qa_knowledge
+    qa_knowledge/                Seed knowledge files (dormant — qa_tools inactive)
 ```

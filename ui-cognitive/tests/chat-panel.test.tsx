@@ -439,7 +439,7 @@ describe("ChatPanel", () => {
     expect(scrollToBottomMock.mock.calls.length).toBeGreaterThan(beforeDrainScrollCalls);
   });
 
-  it("does not force auto-scroll when user is detached from bottom", async () => {
+  it("keeps forcing auto-scroll even when user is detached from bottom", async () => {
     const rafCallbacks: FrameRequestCallback[] = [];
     vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback: FrameRequestCallback) => {
       rafCallbacks.push(callback);
@@ -488,7 +488,7 @@ describe("ChatPanel", () => {
       callback?.(step * 16);
     }
 
-    expect(scrollToBottomMock).not.toHaveBeenCalled();
+    expect(scrollToBottomMock).toHaveBeenCalled();
   });
 
   it("shows active agent indicators during visual streaming and hides them after completion", async () => {

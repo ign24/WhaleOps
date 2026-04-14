@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 import asyncio
+import datetime as _dt
+from pathlib import Path
 from types import SimpleNamespace
 
 from langchain_core.messages import AIMessage
@@ -1007,7 +1008,14 @@ def test_no_duplicate_tool_calls_with_updates_stream(monkeypatch: pytest.MonkeyP
                 events_seen += 1
                 yield {
                     "event": "on_chat_model_stream",
-                    "data": {"chunk": AIMessageChunk(content="", tool_call_chunks=[{"name": "fake_tool", "args": "", "id": "call_abc", "index": 0}])},
+                    "data": {
+                        "chunk": AIMessageChunk(
+                            content="",
+                            tool_call_chunks=[
+                                {"name": "fake_tool", "args": "", "id": "call_abc", "index": 0}
+                            ],
+                        )
+                    },
                     "name": "llm",
                 }
 
@@ -2478,7 +2486,9 @@ def _make_streaming_llm(chunks: list[AIMessageChunk]):
     return _FakeStreamingLLM()
 
 
-async def test_agent_node_uses_astream_and_accumulates_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agent_node_uses_astream_and_accumulates_chunks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """2.1 RED — agent_node must call astream() and accumulate AIMessageChunks.
 
     When the LLM streams N chunks, the final message appended to state must
@@ -2503,14 +2513,17 @@ async def test_agent_node_uses_astream_and_accumulates_chunks(monkeypatch: pytes
     # Manually wire the attributes that NAT's __init__ would have set
     graph.bound_llm = llm.bind_tools([])
     from langchain_core.runnables import RunnableLambda
+
     graph.agent = RunnableLambda(lambda state: state.get("messages", [])) | graph.bound_llm
     graph.callbacks = None
     graph.summary_llm = None
     graph._compaction_cooldown_counter = 0
     from cognitive_code_agent.memory import WorkingMemoryConfig
+
     graph.compaction_config = WorkingMemoryConfig()
 
     from langchain_core.messages import HumanMessage
+
     state = ToolCallAgentGraphState(messages=[HumanMessage(content="Hi")])
 
     result = await graph.agent_node(state)
@@ -2523,7 +2536,9 @@ async def test_agent_node_uses_astream_and_accumulates_chunks(monkeypatch: pytes
     )
 
 
-async def test_agent_node_preserves_tool_calls_after_streaming(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_agent_node_preserves_tool_calls_after_streaming(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """2.2 RED — tool_calls on the final chunk must survive accumulation."""
     from nat.agent.tool_calling_agent.agent import ToolCallAgentGraph
 
@@ -2544,14 +2559,17 @@ async def test_agent_node_preserves_tool_calls_after_streaming(monkeypatch: pyte
     )
     graph.bound_llm = llm.bind_tools([])
     from langchain_core.runnables import RunnableLambda
+
     graph.agent = RunnableLambda(lambda state: state.get("messages", [])) | graph.bound_llm
     graph.callbacks = None
     graph.summary_llm = None
     graph._compaction_cooldown_counter = 0
     from cognitive_code_agent.memory import WorkingMemoryConfig
+
     graph.compaction_config = WorkingMemoryConfig()
 
     from langchain_core.messages import HumanMessage
+
     state = ToolCallAgentGraphState(messages=[HumanMessage(content="Hi")])
 
     result = await graph.agent_node(state)
@@ -2566,9 +2584,6 @@ async def test_agent_node_preserves_tool_calls_after_streaming(monkeypatch: pyte
 # ---------------------------------------------------------------------------
 # _stream_graph_events helper (granular-streaming-events, section 3)
 # ---------------------------------------------------------------------------
-
-
-import datetime as _dt
 
 
 def _make_fake_graph_for_events(events: list[dict]):
@@ -2604,11 +2619,22 @@ def _helper_args():
 
 async def test_stream_graph_events_yields_token_chunks() -> None:
     """3.1 RED — on_chat_model_stream events produce ChatResponseChunk tokens."""
-    from cognitive_code_agent.agents.safe_tool_calling_agent import _stream_graph_events, StreamToken
+    from cognitive_code_agent.agents.safe_tool_calling_agent import (
+        _stream_graph_events,
+        StreamToken,
+    )
 
     events = [
-        {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content="Hello")}, "name": "llm"},
-        {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content=" world")}, "name": "llm"},
+        {
+            "event": "on_chat_model_stream",
+            "data": {"chunk": AIMessageChunk(content="Hello")},
+            "name": "llm",
+        },
+        {
+            "event": "on_chat_model_stream",
+            "data": {"chunk": AIMessageChunk(content=" world")},
+            "name": "llm",
+        },
     ]
     graph = _make_fake_graph_for_events(events)
     out = await _collect_helper_output(_stream_graph_events(graph, **_helper_args()))
@@ -2622,12 +2648,20 @@ async def test_stream_graph_events_yields_token_chunks() -> None:
 
 async def test_stream_graph_events_filters_non_token_events() -> None:
     """3.2 RED — on_chain_*, on_chat_model_end without stream, unknown events are filtered."""
-    from cognitive_code_agent.agents.safe_tool_calling_agent import _stream_graph_events, StreamToken, StreamActivity
+    from cognitive_code_agent.agents.safe_tool_calling_agent import (
+        _stream_graph_events,
+        StreamToken,
+        StreamActivity,
+    )
 
     events = [
         {"event": "on_chain_start", "data": {}, "name": "agent"},
         {"event": "on_chat_model_start", "data": {}, "name": "llm"},
-        {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content="x")}, "name": "llm"},
+        {
+            "event": "on_chat_model_stream",
+            "data": {"chunk": AIMessageChunk(content="x")},
+            "name": "llm",
+        },
         {"event": "on_chat_model_end", "data": {"output": AIMessage(content="x")}, "name": "llm"},
         {"event": "on_chain_end", "data": {}, "name": "agent"},
     ]
@@ -2643,7 +2677,10 @@ async def test_stream_graph_events_filters_non_token_events() -> None:
 
 async def test_stream_graph_events_emits_activity_on_tool_start() -> None:
     """3.3 RED — on_tool_start event yields a StreamActivity payload."""
-    from cognitive_code_agent.agents.safe_tool_calling_agent import _stream_graph_events, StreamActivity
+    from cognitive_code_agent.agents.safe_tool_calling_agent import (
+        _stream_graph_events,
+        StreamActivity,
+    )
 
     events = [
         {
@@ -2665,7 +2702,10 @@ async def test_stream_graph_events_emits_activity_on_tool_start() -> None:
 
 async def test_stream_graph_events_emits_activity_on_tool_end() -> None:
     """3.4 RED — on_tool_end event yields a StreamActivity payload with truncated result."""
-    from cognitive_code_agent.agents.safe_tool_calling_agent import _stream_graph_events, StreamActivity
+    from cognitive_code_agent.agents.safe_tool_calling_agent import (
+        _stream_graph_events,
+        StreamActivity,
+    )
 
     long_result = "x" * 50000
     events = [
@@ -2694,19 +2734,52 @@ async def test_no_duplicate_tool_dispatch_under_streaming() -> None:
     Even if on_chat_model_stream emits multiple chunks with tool_call fragments,
     the helper emits at most ONE StreamActivity per on_tool_start event.
     """
-    from cognitive_code_agent.agents.safe_tool_calling_agent import _stream_graph_events, StreamActivity
+    from cognitive_code_agent.agents.safe_tool_calling_agent import (
+        _stream_graph_events,
+        StreamActivity,
+    )
 
-    tool_call = {"id": "call_abc", "name": "fake_tool", "args": {"path": "/x"}}
     events = [
-        {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content="", tool_call_chunks=[{"name": "fake_tool", "args": "", "id": "call_abc", "index": 0}])}, "name": "llm"},
-        {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content="", tool_call_chunks=[{"name": None, "args": '{"pa', "id": None, "index": 0}])}, "name": "llm"},
-        {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content="", tool_call_chunks=[{"name": None, "args": 'th": "/x"}', "id": None, "index": 0}])}, "name": "llm"},
+        {
+            "event": "on_chat_model_stream",
+            "data": {
+                "chunk": AIMessageChunk(
+                    content="",
+                    tool_call_chunks=[
+                        {"name": "fake_tool", "args": "", "id": "call_abc", "index": 0}
+                    ],
+                )
+            },
+            "name": "llm",
+        },
+        {
+            "event": "on_chat_model_stream",
+            "data": {
+                "chunk": AIMessageChunk(
+                    content="",
+                    tool_call_chunks=[{"name": None, "args": '{"pa', "id": None, "index": 0}],
+                )
+            },
+            "name": "llm",
+        },
+        {
+            "event": "on_chat_model_stream",
+            "data": {
+                "chunk": AIMessageChunk(
+                    content="",
+                    tool_call_chunks=[{"name": None, "args": 'th": "/x"}', "id": None, "index": 0}],
+                )
+            },
+            "name": "llm",
+        },
         {"event": "on_tool_start", "name": "fake_tool", "data": {"input": {"path": "/x"}}},
     ]
     graph = _make_fake_graph_for_events(events)
     out = await _collect_helper_output(_stream_graph_events(graph, **_helper_args()))
 
-    activities = [i for i in out if isinstance(i, StreamActivity) and i.payload.get("type") == "tool_start"]
+    activities = [
+        i for i in out if isinstance(i, StreamActivity) and i.payload.get("type") == "tool_start"
+    ]
     assert len(activities) == 1, f"Expected exactly 1 tool_start, got {len(activities)}"
 
 
@@ -2716,7 +2789,11 @@ async def test_stream_graph_events_propagates_exceptions() -> None:
 
     class _BrokenGraph:
         async def astream_events(self, state, config=None, version="v2"):
-            yield {"event": "on_chat_model_stream", "data": {"chunk": AIMessageChunk(content="x")}, "name": "llm"}
+            yield {
+                "event": "on_chat_model_stream",
+                "data": {"chunk": AIMessageChunk(content="x")},
+                "name": "llm",
+            }
             raise ConnectionError("boom")
 
     with pytest.raises(ConnectionError, match="boom"):
@@ -2778,20 +2855,28 @@ async def test_emit_stream_activity_pushes_intermediate_step_tool_end() -> None:
     sub = mgr.subscribe(lambda step: captured.append(step))
     try:
         shared_uuid = "11111111-2222-3333-4444-555555555555"
-        _emit_stream_activity(StreamActivity({
-            "type": "tool_start",
-            "name": "fs_tools_read_file",
-            "tool_args": {"path": "/x"},
-            "mode": "analyze",
-            "uuid": shared_uuid,
-        }))
-        _emit_stream_activity(StreamActivity({
-            "type": "tool_end",
-            "name": "fs_tools_read_file",
-            "tool_result": "file contents",
-            "mode": "analyze",
-            "uuid": shared_uuid,
-        }))
+        _emit_stream_activity(
+            StreamActivity(
+                {
+                    "type": "tool_start",
+                    "name": "fs_tools_read_file",
+                    "tool_args": {"path": "/x"},
+                    "mode": "analyze",
+                    "uuid": shared_uuid,
+                }
+            )
+        )
+        _emit_stream_activity(
+            StreamActivity(
+                {
+                    "type": "tool_end",
+                    "name": "fs_tools_read_file",
+                    "tool_result": "file contents",
+                    "mode": "analyze",
+                    "uuid": shared_uuid,
+                }
+            )
+        )
         await asyncio.sleep(0.01)
     finally:
         sub.unsubscribe()
@@ -2806,6 +2891,7 @@ async def test_emit_stream_activity_pushes_intermediate_step_tool_end() -> None:
 # ---------------------------------------------------------------------------
 # task_complete SSE signal — RED tests (tasks 2.1, 2.2)
 # ---------------------------------------------------------------------------
+
 
 async def test_emit_stream_activity_handles_task_complete_success() -> None:
     """2.1 RED — task_complete with success=True emits a CUSTOM_END intermediate step."""

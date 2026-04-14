@@ -20,19 +20,25 @@ Full tree from code-agent minus: `.git/`, runtime caches (`__pycache__`, `.venv`
 - `pyproject.toml`: renamed to `cognitive-ops-agent`, version reset to `0.0.1`, description updated. Python package layout (`cognitive_code_agent/`) NOT renamed — deferred to avoid mass-rename churn before the ops domain is defined.
 - Fresh `git init` on `main`, no history.
 
-## TBD — to define with the team
+## Done (post-fork)
 
-- [ ] System prompt rewrite for the ops domain (operator persona, tool surface, tier language).
-- [ ] Remove / archive code-specific tools once ops-equivalent tools exist: `code_review_tools`, `security_tools` (SAST), `refactor_gen`, `qa_tools`, `docs_tools`, `clone_tools`, `report_tools`, `findings_store` (Milvus).
-- [ ] Rename Python package `cognitive_code_agent` → `cognitive_ops_agent` once nothing else is moving.
-- [ ] Delete `ui/` (unused per code-agent convention) and evaluate whether `ui-cognitive/` ships with ops-agent or the ops view is a panel inside the code-agent UI.
-- [ ] D03 mini REST API contract (endpoints: `/status`, `/logs/{service}`, `/services`; auth via static token + IP whitelist).
-- [ ] Deploy target: D09 host, container layout, port, secrets management.
-- [ ] Ops tools (read-only first): `vps_status`, `get_logs`, `list_services`. Tier 0 only.
-- [ ] Guardrails and tiers for future write operations (restart, lifecycle) — separate design pass.
-- [ ] Telegram bot configuration for this agent (separate bot token, command namespace).
-- [ ] Memory store isolation: different Redis key prefix / DB index so ops sessions don't mix with coder sessions.
-- [ ] Observability: separate NAT trace exporter destination.
+- [x] System prompt rewrite for the ops domain (`ops.md`, `base.md`, `chat.md`).
+- [x] Ops tools (read-only, Tier 0): `list_containers`, `get_container_logs`, `inspect_container` via Docker Python SDK.
+- [x] Structured memory: `save_note` / `get_notes` tools backed by SQLite (`ops_notes.db`).
+- [x] Memory store isolation: Redis DB 1, key prefix `ops:`, separate from code-agent.
+- [x] Telegram bot gateway: separate bot token, allowlist, `/reset` command, concurrency guard.
+- [x] `ui-cognitive/` ships with ops-agent; `ui/` (OpenUI) removed.
+- [x] Observability: `cognitive-ops-agent` project name in trace output.
+- [x] Cron jobs: APScheduler + Redis job store, `schedule_task` tool, `/api/jobs` endpoint.
+- [x] Ops dashboard page (`/ops`): Docker status + notes + cron jobs without LLM.
+
+## Still pending
+
+- [ ] Remove / archive dormant code-specific tools: `code_review_tools`, `security_tools`, `refactor_gen`, `qa_tools`, `docs_tools`, `clone_tools`, `report_tools`. Keep `findings_store` for ops findings.
+- [ ] Rename Python package `cognitive_code_agent` → `cognitive_ops_agent` once the domain is stable.
+- [ ] D03 mini REST API contract (endpoints: `/status`, `/logs/{service}`, `/services`; auth via static token + IP whitelist). Currently deferred — env vars reserved in `.env.example`.
+- [ ] Tier 1 write operations (restart, lifecycle) — separate design pass required.
+- [ ] Drift discipline: when a fix lands in `cognitive-code-agent` for shared runtime pieces (agent loop, streaming, memory, MCP, cron), evaluate for backport here.
 
 ## Drift discipline
 

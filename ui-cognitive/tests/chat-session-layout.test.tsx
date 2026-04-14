@@ -59,12 +59,12 @@ vi.mock("@/components/chat/chat-panel", () => ({
           props.onHistoryLoaded?.([
             {
               id: "entry-ws",
-              label: "shell_execute",
+              label: "inspect_container",
               kind: "tool",
               status: "completed",
               startedAt: 1000,
-              toolNameNormalized: "shell_execute",
-              commandSummary: "ls -la",
+              toolNameNormalized: "inspect_container",
+              toolArgs: { container_name: "nginx" },
             },
           ])
         }
@@ -129,7 +129,7 @@ describe("ChatSessionLayout", () => {
 
     fireEvent.click(screen.getByText("Load history"));
 
-    expect(screen.getByText("Espacio de trabajo")).toBeTruthy();
+    expect(screen.getByText("Contexto de operaciones")).toBeTruthy();
   });
 
   it("starts with activity panel closed on mobile", () => {

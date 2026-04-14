@@ -1,20 +1,16 @@
-# Cognitive Bot UI
+# Cognitive Ops UI
 
-Interfaz web colaborativa para NAT (NVIDIA Agent Toolkit), construida con Next.js 16.
-
-Permite trabajar sesiones compartidas, ver historial, monitorear subagentes en tiempo real y administrar usuarios locales con autenticacion por credenciales.
+Interfaz web para el ops-agent, construida con Next.js 16. Permite monitorear contenedores Docker en tiempo real, consultar notas operativas, administrar cron jobs y chatear con el agente via SSE.
 
 ## Que incluye
 
 - Chat con streaming tipo SSE hacia NAT
-- Workspace compartido (todas las sesiones visibles para el equipo)
-- Panel de actividad de subagentes con estado, timeline y resumen de sesion
-- Tarjeta de filesystem (sandbox/workspace) obtenida via backend NAT (source of truth del runtime)
+- Dashboard de operaciones (`/ops`): estado de contenedores, notas SQLite y cron jobs sin pasar por el LLM
+- Panel de actividad del agente con estado, timeline y resumen de sesion
 - Dashboard de observabilidad (`/observability`) con metricas desde `TRACES_PATH`
 - Comandos locales en chat (`/help`, `/tools`, `/status`, `/stop`, `/reset`)
-- Comandos passthrough al agente (`/analyze`, `/quick-review`, `/refactor`, `/execute`)
 - Panel admin para alta/activacion/desactivacion de usuarios
-- Modo claro/oscuro y UI neumorfica
+- Modo claro/oscuro con esquema de colores WhaleOps
 
 ## Stack
 
@@ -23,28 +19,6 @@ Permite trabajar sesiones compartidas, ver historial, monitorear subagentes en t
 - Tailwind CSS v4
 - NAT backend via HTTP SSE
 - Bun para desarrollo local
-- Docker Compose para despliegue en VPS
-
-## Catalogo de modelos (alineado con backend)
-
-El selector de modelos usa `ui-cognitive/lib/model-registry.ts` y debe mantenerse alineado con los modelos switchables definidos en `src/cognitive_code_agent/configs/config.yml`.
-
-Modelos visibles en frontend:
-
-- `devstral`
-- `qwen_coder`
-- `deepseek_v3`
-- `glm_4_7`
-- `step_3_5_flash`
-- `kimi_reader`
-- `kimi_thinking`
-- `nemotron_super`
-- `gemma_4_31b_it` (vision)
-
-Notas:
-
-- `nemotron_super_thinking` se maneja como variante interna del toggle thinking sobre `nemotron_super`.
-- El backend tambien define modelos no expuestos en el picker por default (`codestral`, `qwen_coder_32b`, `qwq`) para uso operativo/configurable.
 
 ## Requisitos
 
@@ -62,7 +36,7 @@ bun dev
 
 Abrir `http://localhost:3000`.
 
-Credenciales locales por defecto: revisar `data/users.json` (email) y definir password local fuera del repo.
+Credenciales locales por defecto: revisar `data/users.json` y definir password fuera del repo.
 
 ## Variables de entorno
 
@@ -77,7 +51,6 @@ Tomar como base `.env.example`:
 | `OBS_COST_OUTPUT_PER_1K` | No | Costo USD estimado por 1K tokens de output |
 | `AUTH_SECRET` | Si | Secreto de Auth.js |
 | `AUTH_URL` | Si | URL publica/base de auth |
-| `NEXTAUTH_SECRET` | No | Alias retrocompatible de `AUTH_SECRET` |
 
 ## Scripts
 
@@ -93,8 +66,6 @@ bun run build
 
 ### E2E local
 
-Los tests E2E requieren un usuario local valido.
-
 ```bash
 E2E_EMAIL=e2e-admin@cgn.local E2E_PASSWORD=e2e-password-123 node scripts/seed-e2e-user.mjs
 E2E_EMAIL=e2e-admin@cgn.local E2E_PASSWORD=e2e-password-123 bun run test:e2e
@@ -104,11 +75,19 @@ Si no seteas `E2E_EMAIL`/`E2E_PASSWORD`, los tests de Playwright se marcan como 
 
 ## Estructura principal
 
-- `app/`: rutas App Router y endpoints API (`/api/chat`, `/api/sessions`, `/api/users`, `/api/health`, `/api/tools`, `/api/observability/summary`)
-- `components/`: UI de chat, layout y admin
+- `app/`: rutas App Router y endpoints API
+  - `/api/chat` — proxy SSE al backend NAT
+  - `/api/sessions` — listado de sesiones
+  - `/api/users` — admin de usuarios
+  - `/api/health`, `/api/tools` — estado del sistema
+  - `/api/observability/summary` — resumen de trazas
+  - `/api/ops/status` — proxy autenticado a `${NAT_BACKEND_URL}/api/ops/status`
+  - `/api/ops/notes` — proxy autenticado a `${NAT_BACKEND_URL}/api/ops/notes`
+  - `/api/ops/containers/[container]/inspect` — detalle bajo demanda
+  - `/api/ops/containers/[container]/logs` — logs recientes bajo demanda
+- `components/`: UI de chat, layout, actividad y admin
 - `lib/`: cliente NAT, normalizadores y utilidades
 - `data/users.json`: usuarios locales (source of truth para auth)
-- `docs/`: especificaciones y documentacion operativa
 
 ## Arquitectura de alto nivel
 
@@ -118,40 +97,32 @@ Browser
   -> NAT backend (127.0.0.1:8000)
 ```
 
-- Las API routes validan sesion antes de proxear al backend NAT
-- `/api/workspace/roots` y `/api/workspace/tree` proxyean al backend NAT para evitar depender del filesystem local del contenedor UI
+Las API routes validan sesion antes de proxear al backend NAT.
 
-## Nota operativa (produccion)
+## Dashboard de operaciones (/ops)
 
-- **Workspace/Sandbox card**: los datos vienen del servicio `agent` (NAT backend). Si la UI esta autenticada pero no puede alcanzar `NAT_BACKEND_URL`, la card mostrara error upstream.
-- **Dashboard de trazas**: el resumen de trazas se calcula en UI sobre `TRACES_PATH`. En EasyPanel, valida que ese path este montado en el servicio `ui` en modo lectura; si no, veras volumen de requests en 0 aunque el backend procese ejecuciones.
+La pagina `/ops` muestra estado Docker en tiempo real sin pasar por el agente LLM:
+
+- **Contenedores**: polling cada 30s a `/api/ops/status` — nombre, imagen, estado, uptime
+- **Notas**: polling cada 60s a `/api/ops/notes` — instrucciones, patrones, summaries
+- **Cron jobs**: polling cada 30s a `/api/jobs` — jobs activos con expresion cron
+
+Los datos se obtienen directo del backend FastAPI y no consumen tokens del LLM.
 
 ## Comandos de chat
 
 ### Comandos locales (resueltos en frontend)
 
-- `/help`
-- `/tools`
-- `/status`
-- `/reset`
-- `/stop`
+- `/help` — lista de comandos disponibles
+- `/tools` — herramientas activas del agente
+- `/status` — estado del backend NAT
+- `/reset` — nueva sesion
+- `/stop` — interrumpe la generacion actual
 
-### Comandos passthrough al agente
+## Nota operativa (produccion)
 
-- `/analyze <repo|url|contexto>`
-  - se transforma en prompt `full analysis ...`
-  - pensado para auditoria completa (code review, security, QA y docs)
-- `/quick-review <repo|url|contexto>`
-  - se transforma en prompt `quick review ...`
-  - pensado para revision rapida con menor costo/latencia
-- `/refactor <instruccion>`
-  - se envia al backend NAT manteniendo el prefijo `/refactor`
-  - pensado para modificaciones de codigo asistidas
-- `/execute <instruccion>`
-  - se envia al backend NAT manteniendo el prefijo `/execute`
-  - pensado para operaciones de ejecucion/git en modo controlado
-
-Estos comandos no se ejecutan localmente: son passthrough al backend NAT.
+- **Dashboard de trazas**: el resumen se calcula en UI sobre `TRACES_PATH`. En EasyPanel, validar que ese path este montado en el servicio `ui` en modo lectura.
+- **Dashboard /ops**: los datos vienen del backend NAT. Si la UI no puede alcanzar `NAT_BACKEND_URL`, las cards mostraran error con boton de retry.
 
 ## Deploy en VPS (Docker)
 
@@ -164,8 +135,7 @@ Prerequisitos:
 docker compose up -d --build
 ```
 
-El servicio expone internamente el puerto `3000` dentro de la red Docker (`expose`) y monta `./data` para persistir usuarios.
-Para el dashboard, el compose tambien monta `../traces` en `/app/traces` (solo lectura).
+El servicio expone internamente el puerto `3000` dentro de la red Docker y monta `./data` para persistir usuarios.
 
 ## Calidad y verificacion
 
@@ -187,3 +157,4 @@ bun run test:e2e
 ## Documentacion relacionada
 
 - `AGENTS.md`: guia para desarrolladores y LLMs que trabajen en este repo
+- `ARCHITECTURE.md`: arquitectura del backend NAT

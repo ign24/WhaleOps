@@ -6,34 +6,19 @@ services:
     env_file:
       - .env
     environment:
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/1}
       - MILVUS_URI=${MILVUS_URI:-http://milvus-standalone:19530}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - TRACES_PATH=${TRACES_PATH:-/app/traces/agent_traces.jsonl}
       - LOGS_PATH=${LOGS_PATH:-/app/logs/agent.log}
+      - NOTES_DB_PATH=${NOTES_DB_PATH:-/app/data/ops_notes.db}
     volumes:
-      - /tmp/analysis:/tmp/analysis
-      - agent_workspace:/app/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./traces:/app/traces
       - ./logs:/app/logs
+      - ops_data:/app/data
     depends_on:
-      - milvus-standalone
       - redis
-      - sandbox
-    restart: unless-stopped
-
-  sandbox:
-    build: .
-    command: uv run python -m nat.tool.code_execution.local_sandbox.local_sandbox_server
-    volumes:
-      - /tmp/analysis:/tmp/analysis
-      - agent_workspace:/app/workspace
-    restart: unless-stopped
-
-  sandbox-cleanup:
-    image: alpine:3.20
-    volumes:
-      - /tmp/analysis:/tmp/analysis
-    entrypoint: sh -c "while true; do find /tmp/analysis -mindepth 1 -maxdepth 1 -mtime +0 -exec rm -rf {} +; sleep 86400; done"
+      - milvus-standalone
     restart: unless-stopped
 
   mcp-server:
@@ -86,7 +71,6 @@ services:
       MINIO_ADDRESS: minio:9000
     ports:
       - "19530:19530"
-      - "9091:9091"
     volumes:
       - milvus_data:/var/lib/milvus
     depends_on:
@@ -95,8 +79,8 @@ services:
     restart: unless-stopped
 
 volumes:
-  agent_workspace:
+  redis_data:
   etcd_data:
   minio_data:
   milvus_data:
-  redis_data:
+  ops_data:

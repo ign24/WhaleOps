@@ -66,7 +66,7 @@ export const TrendLineChart = ({
               borderRadius: 8,
               fontSize: 12,
             }}
-            labelFormatter={formatTime}
+            labelFormatter={(label) => formatTime(label as number)}
           />
           {dataKeys.map((key, index) => (
             <Line

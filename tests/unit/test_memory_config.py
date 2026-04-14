@@ -219,7 +219,7 @@ class TestMemoryConfigFromProductionYaml:
         assert config.working.max_history == 8
         assert config.working.summarize_on_eviction is True
         assert config.working.summary_max_tokens == 400
-        assert config.working.summary_llm_name == "kimi_reader"
+        assert config.working.summary_llm_name == "devstral"
         assert config.working.compaction_char_threshold == 40000
         assert config.working.compaction_message_threshold == 30
         assert config.working.compaction_retain_recent == 8
@@ -235,7 +235,7 @@ class TestMemoryConfigFromProductionYaml:
         assert config.auto_retrieval.include_semantic is True
         assert config.auto_retrieval.max_findings_retrieved == 3
         assert config.semantic.enabled is True
-        assert config.semantic.collection_name == "domain_knowledge"
+        assert config.semantic.collection_name == "ops_domain_knowledge"
 
 
 class TestMemoryConfigLoaderPrecedence:

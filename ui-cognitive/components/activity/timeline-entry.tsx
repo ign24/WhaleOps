@@ -51,8 +51,15 @@ const TimelineEntryComponent = ({ entry, isActiveTool, isLast = false }: Timelin
   const isLifecycle = entry.kind === "lifecycle";
   const rawSubtitle =
     entry.kind === "tool"
-      ? (entry.commandSummary ?? entry.sandboxPath ?? null)
+      ? (entry.commandSummary ?? null)
       : null;
+
+  const containerRef =
+    entry.kind === "tool" && entry.toolArgs
+      ? (typeof entry.toolArgs.container_name === "string" ? entry.toolArgs.container_name : null) ??
+        (typeof entry.toolArgs.container_id === "string" ? entry.toolArgs.container_id : null) ??
+        undefined
+      : undefined;
 
   const hasExpandableContent =
     !isTerminal &&
@@ -140,7 +147,7 @@ const TimelineEntryComponent = ({ entry, isActiveTool, isLast = false }: Timelin
           <ToolCallCard
             toolArgs={entry.toolArgs}
             toolResult={entry.toolResult}
-            sandboxPath={entry.sandboxPath}
+            containerRef={containerRef}
             commandSummary={entry.commandSummary}
             returnCodeSummary={entry.returnCodeSummary}
           />

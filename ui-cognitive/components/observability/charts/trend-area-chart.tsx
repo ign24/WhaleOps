@@ -67,7 +67,7 @@ export const TrendAreaChart = ({
               borderRadius: 8,
               fontSize: 12,
             }}
-            labelFormatter={formatTime}
+            labelFormatter={(label) => formatTime(label as number)}
           />
           {sloThreshold !== undefined ? (
             <ReferenceLine

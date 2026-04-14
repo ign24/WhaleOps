@@ -7,9 +7,10 @@ import { Sidebar } from "@/components/layout/sidebar";
 
 type MobileSidebarProps = {
   isAdmin: boolean;
+  logoutAction?: () => Promise<void>;
 };
 
-export const MobileSidebar = ({ isAdmin }: MobileSidebarProps) => {
+export const MobileSidebar = ({ isAdmin, logoutAction }: MobileSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -102,7 +103,7 @@ export const MobileSidebar = ({ isAdmin }: MobileSidebarProps) => {
               </button>
             </div>
             <div className="h-[calc(100%-38px)] sm:h-[calc(100%-52px)]">
-              <Sidebar isAdmin={isAdmin} />
+              <Sidebar isAdmin={isAdmin} logoutAction={logoutAction} />
             </div>
           </div>
           <button

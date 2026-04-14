@@ -3,7 +3,7 @@
 import { ActivityTimeline } from "@/components/activity/activity-timeline";
 import { SessionInfo } from "@/components/activity/session-info";
 import { SessionSummary } from "@/components/activity/session-summary";
-import { SessionWorkspace } from "@/components/activity/session-workspace";
+import { OpsSessionContext } from "@/components/activity/ops-session-context";
 import { ActivityEntry } from "@/types/chat";
 
 export type ActivityPanelProps = {
@@ -55,7 +55,7 @@ export const ActivityPanel = ({
       <div className="min-h-0 flex-1">
         <ActivityTimeline entries={entries} activeTool={activeTool} isLive={isLive} />
       </div>
-      <SessionWorkspace entries={workspaceEntries ?? entries} />
+      <OpsSessionContext entries={workspaceEntries ?? entries} />
       <SessionSummary entries={entries} />
     </aside>
   );

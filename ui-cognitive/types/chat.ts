@@ -110,6 +110,14 @@ export type ActivityEntry = {
   toolResult?: string;
 };
 
+export type OpsSnapshot = {
+  containersReferenced: string[];
+  logsFetched: { container: string; lines: number }[];
+  notesSaved: { type: string; container?: string }[];
+  schedulesCreated: { name: string; cron: string }[];
+  isEmpty: boolean;
+};
+
 export type WorkspaceRepo = {
   url: string;
   localPath: string;

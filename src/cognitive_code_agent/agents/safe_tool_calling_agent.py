@@ -19,6 +19,7 @@ from typing import Annotated
 from typing import AsyncGenerator
 
 from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessageChunk
 from langchain_core.messages import BaseMessage
 from langchain_core.messages import SystemMessage
 from langchain_core.messages import ToolMessage
@@ -1489,6 +1490,7 @@ async def _stream_graph_events(
             data = event.get("data") or {}
             tool_name = event.get("name") or "tool"
             import uuid as _uuid
+
             run_id = str(event.get("run_id") or _uuid.uuid4())
             yield StreamActivity(
                 {
@@ -1502,9 +1504,7 @@ async def _stream_graph_events(
         elif ev_type == "on_tool_end":
             data = event.get("data") or {}
             raw_output = data.get("output")
-            result_text = (
-                raw_output if isinstance(raw_output, str) else str(raw_output)
-            )
+            result_text = raw_output if isinstance(raw_output, str) else str(raw_output)
             tool_name_end = event.get("name") or "tool"
             _overrides = _TOOL_GUARD_OVERRIDES.get() or {}
             _effective = dict(per_tool_max_chars or {})
@@ -1512,10 +1512,10 @@ async def _stream_graph_events(
             _tool_cap = _effective.get(tool_name_end, _STREAM_ACTIVITY_RESULT_MAX_CHARS)
             if len(result_text) > _tool_cap:
                 result_text = (
-                    result_text[:_tool_cap]
-                    + f"... [truncated, {len(result_text)} chars total]"
+                    result_text[:_tool_cap] + f"... [truncated, {len(result_text)} chars total]"
                 )
             import uuid as _uuid
+
             run_id = str(event.get("run_id") or _uuid.uuid4())
             yield StreamActivity(
                 {
@@ -1660,9 +1660,7 @@ class SafeToolCallAgentGraph(ToolCallAgentGraph):
         merged_config = merge_configs(base_config, runtime_config)
 
         try:
-            response = await _stream_and_accumulate(
-                self.agent, state.messages, merged_config
-            )
+            response = await _stream_and_accumulate(self.agent, state.messages, merged_config)
         except Exception as agent_ex:  # noqa: BLE001
             failure_class = _classify_failure(agent_ex)
             if failure_class is FailureClass.TOOL_CALL_ID_MISMATCH:
@@ -3021,7 +3019,9 @@ async def safe_tool_calling_agent_workflow(
                             "Recovery loop exhausted and synthesis failed.",
                         ],
                     )
-                    _emit_stream_activity(StreamActivity({"type": "task_complete", "success": False}))
+                    _emit_stream_activity(
+                        StreamActivity({"type": "task_complete", "success": False})
+                    )
                     yield ChatResponseChunk.create_streaming_chunk(
                         content=fallback_msg,
                         id_=chunk_id,

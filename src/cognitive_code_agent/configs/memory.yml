@@ -1,9 +1,13 @@
+# Key prefix applied to all Redis operations for this agent.
+# Isolates ops-agent data from code-agent data on a shared Redis instance.
+key_prefix: "ops:"
+
 working:
   enabled: true
   max_history: 8
   summarize_on_eviction: true
   summary_max_tokens: 400
-  summary_llm_name: kimi_reader
+  summary_llm_name: devstral
   compaction_char_threshold: 40000
   compaction_message_threshold: 30
   compaction_retain_recent: 8
@@ -12,12 +16,15 @@ working:
 episodic:
   enabled: true
   store: redis
+  # DB index 1 separates ops sessions from code-agent sessions (which use DB 0).
+  # Ensure your Redis instance has `databases >= 2` (default is 16).
+  db: 1
   max_sessions_retrieved: 5
   ttl_days: 90
 
 semantic:
   enabled: true
-  collection_name: domain_knowledge
+  collection_name: ops_domain_knowledge
   max_knowledge_retrieved: 3
 
 auto_retrieval:

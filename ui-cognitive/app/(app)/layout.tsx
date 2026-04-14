@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { Header } from "@/components/layout/header";
 import { SidebarShell } from "@/components/layout/sidebar-shell";
 
@@ -13,6 +13,11 @@ export default async function ProtectedLayout({
   if (!session?.user) {
     redirect("/login");
   }
+
+  const logoutAction = async () => {
+    "use server";
+    await signOut({ redirectTo: "/login" });
+  };
 
   return (
     <>
@@ -33,13 +38,16 @@ export default async function ProtectedLayout({
               name={session.user.name ?? "Equipo"}
               email={session.user.email ?? ""}
               isAdmin={session.user.role === "admin"}
+              logoutAction={logoutAction}
             />
           </div>
         </div>
 
         <div className="h-full min-h-0 overflow-hidden pt-14">
           <div className="h-full min-h-0 overflow-hidden">
-            <SidebarShell isAdmin={session.user.role === "admin"}>{children}</SidebarShell>
+            <SidebarShell isAdmin={session.user.role === "admin"} logoutAction={logoutAction}>
+              {children}
+            </SidebarShell>
           </div>
         </div>
       </main>

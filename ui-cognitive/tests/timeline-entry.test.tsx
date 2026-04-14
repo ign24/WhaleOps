@@ -29,10 +29,10 @@ describe("TimelineEntry", () => {
   });
 
   it("does not add $ prefix for file category entries", () => {
-    const entry = buildEntry({ label: "write_file", sandboxPath: "/workspace/agent.py" });
+    const entry = buildEntry({ label: "write_file", commandSummary: "write /workspace/agent.py" });
     render(<TimelineEntry entry={entry} isActiveTool={false} />);
     expect(screen.queryByText(/^\$ /)).toBeNull();
-    expect(screen.getByText("/workspace/agent.py")).toBeTruthy();
+    expect(screen.getByText("write /workspace/agent.py")).toBeTruthy();
   });
 
   it("adds title attribute with full label text", () => {

@@ -2,23 +2,26 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AlertCircle, BarChart3, ChevronLeft, ChevronRight, Clock, History, Loader2, MessageSquarePlus, Pencil, Shield, Trash2 } from "lucide-react";
+import { AlertCircle, BarChart3, ChevronLeft, ChevronRight, History, Loader2, MessageSquarePlus, Pencil, Server, Shield, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useSessions } from "@/hooks/use-sessions";
 import { Tooltip } from "@/components/ui/tooltip";
-import { McpServers } from "@/components/layout/mcp-servers";
+import { CronJobs } from "@/components/layout/cron-jobs";
+import { LogoutButton } from "@/components/layout/logout-button";
 import { beginNewConversationAttempt, markNewConversationFeedbackVisible } from "@/lib/new-conversation-latency";
 
 
 type SidebarProps = {
   isAdmin: boolean;
+  logoutAction?: () => Promise<void>;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
 };
 
 export const Sidebar = ({
   isAdmin,
+  logoutAction,
   isCollapsed = false,
   onToggleCollapse,
 }: SidebarProps) => {
@@ -195,8 +198,21 @@ export const Sidebar = ({
             </Link>
           </Tooltip>
 
-          {/* MCP Servers */}
-          <McpServers isCollapsed />
+          {/* Ops */}
+          <Tooltip content="Ops — estado de containers" placement="right">
+            <Link
+              href="/ops"
+              aria-label="Ops Dashboard"
+              className={`styled-button styled-button-icon ${
+                pathname.startsWith("/ops") ? "text-[var(--primary)]" : ""
+              }`}
+            >
+              <Server size={18} />
+            </Link>
+          </Tooltip>
+
+          {/* Cron Jobs */}
+          <CronJobs isCollapsed />
 
           {/* Divider */}
           <div className="my-1 w-8 border-t border-[var(--border)]" />
@@ -253,22 +269,27 @@ export const Sidebar = ({
           )}
         </div>
 
-        {/* Admin */}
-        {isAdmin ? (
+        {/* Footer actions */}
+        {isAdmin || logoutAction ? (
           <div className="shrink-0 border-t border-[var(--border)] px-2 py-2">
-            <Tooltip content="Administración de usuarios" placement="right" wrapperClassName="w-full">
-              <Link
-                href="/admin/users"
-                aria-label="Usuarios"
-                className={`flex h-9 w-full items-center justify-center rounded-lg transition-colors duration-200 ${
-                  pathname === "/admin/users"
-                    ? "bg-[var(--primary)] text-[var(--text-on-primary)]"
-                    : "hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)]"
-                }`}
-              >
-                <Shield size={16} />
-              </Link>
-            </Tooltip>
+            <div className="flex items-center justify-center gap-1">
+              {isAdmin ? (
+                <Tooltip content="Administración de usuarios" placement="right" wrapperClassName="w-full">
+                  <Link
+                    href="/admin/users"
+                    aria-label="Usuarios"
+                    className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-200 ${
+                      pathname === "/admin/users"
+                        ? "bg-[var(--primary)] text-[var(--text-on-primary)]"
+                        : "hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)]"
+                    }`}
+                  >
+                    <Shield size={16} />
+                  </Link>
+                </Tooltip>
+              ) : null}
+              {logoutAction ? <LogoutButton action={logoutAction} /> : null}
+            </div>
           </div>
         ) : null}
       </motion.aside>
@@ -324,7 +345,7 @@ export const Sidebar = ({
       {/* Content */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-2.5 sm:px-4 sm:py-3">
         {/* Observability link */}
-        <Tooltip content="Dashboard de observabilidad del agente" placement="right" wrapperClassName="mb-2.5 w-full sm:mb-3">
+        <Tooltip content="Dashboard de observabilidad del agente" placement="right" wrapperClassName="mb-1 w-full">
           <Link
             href="/observability"
             aria-label="Dashboard"
@@ -339,8 +360,24 @@ export const Sidebar = ({
           </Link>
         </Tooltip>
 
-        {/* MCP Servers */}
-        <McpServers isCollapsed={false} />
+        {/* Ops link */}
+        <Tooltip content="Estado de containers Docker" placement="right" wrapperClassName="mb-2.5 w-full sm:mb-3">
+          <Link
+            href="/ops"
+            aria-label="Ops"
+            className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors duration-200 sm:px-3 sm:py-2 sm:text-sm ${
+              pathname.startsWith("/ops")
+                ? "bg-[var(--primary)] text-[var(--text-on-primary)]"
+                : "hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]"
+            }`}
+          >
+            <Server size={15} className="shrink-0" />
+            Ops
+          </Link>
+        </Tooltip>
+
+        {/* Cron Jobs */}
+        <CronJobs isCollapsed={false} />
 
         {/* Workspace label */}
         <Tooltip
@@ -349,7 +386,7 @@ export const Sidebar = ({
           delay={600}
           wrapperClassName="block"
         >
-          <p className="mb-1.5 cursor-default text-[11px] uppercase tracking-wide text-muted">Workspace</p>
+          <p className="mb-1.5 cursor-default text-[11px] uppercase tracking-wide text-muted">Conversaciones</p>
         </Tooltip>
 
         {/* Sessions list */}
@@ -388,7 +425,13 @@ export const Sidebar = ({
                     </Tooltip>
                     {session.updatedAt ? (
                       <Tooltip content="Última actividad en esta sesión" placement="top" delay={700} wrapperClassName="block w-full min-w-0">
-                        <p className={`truncate text-xs ${isActive ? "text-white/70" : "text-muted"}`}>
+                        <p
+                          className={`truncate text-xs ${
+                            isActive
+                              ? "text-[color-mix(in_srgb,var(--text-on-primary)_70%,transparent)]"
+                              : "text-muted"
+                          }`}
+                        >
                           {session.updatedAt}
                         </p>
                       </Tooltip>
@@ -399,7 +442,11 @@ export const Sidebar = ({
                       <button
                         type="button"
                         onClick={() => void renameConversation(session.sessionKey, session.title)}
-                        className={`rounded p-1 transition-colors duration-150 ${isActive ? "text-white/70 hover:text-white" : "text-muted hover:text-[var(--text-primary)]"}`}
+                        className={`rounded p-1 transition-colors duration-150 ${
+                          isActive
+                            ? "text-[color-mix(in_srgb,var(--text-on-primary)_70%,transparent)] hover:text-[var(--text-on-primary)]"
+                            : "text-muted hover:text-[var(--text-primary)]"
+                        }`}
                         aria-label={`Renombrar ${session.title}`}
                       >
                         <Pencil size={12} />
@@ -409,7 +456,11 @@ export const Sidebar = ({
                       <button
                         type="button"
                         onClick={() => void deleteConversation(session.sessionKey)}
-                        className={`rounded p-1 transition-colors duration-150 ${isActive ? "text-white/70 hover:text-white" : "text-muted hover:text-[var(--error)]"}`}
+                        className={`rounded p-1 transition-colors duration-150 ${
+                          isActive
+                            ? "text-[color-mix(in_srgb,var(--text-on-primary)_70%,transparent)] hover:text-[var(--text-on-primary)]"
+                            : "text-muted hover:text-[var(--error)]"
+                        }`}
                         aria-label={`Eliminar ${session.title}`}
                       >
                         <Trash2 size={12} />
@@ -424,23 +475,28 @@ export const Sidebar = ({
         </div>
       </div>
 
-      {/* Admin footer */}
-      {isAdmin ? (
+      {/* Footer actions */}
+      {isAdmin || logoutAction ? (
         <div className="shrink-0 border-t border-[var(--border)] px-3 py-2.5 sm:px-4 sm:py-3">
-          <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted">Admin</p>
-          <Tooltip content="Administración de usuarios del sistema" placement="top" wrapperClassName="block w-full">
-            <Link
-              href="/admin/users"
-              className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors duration-200 sm:px-3 sm:py-2 sm:text-sm ${
-                pathname === "/admin/users"
-                  ? "bg-[var(--primary)] text-[var(--text-on-primary)]"
-                  : "hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]"
-              }`}
-            >
-              <Shield size={15} className="shrink-0" />
-              Usuarios
-            </Link>
-          </Tooltip>
+          <p className="mb-1.5 text-[11px] uppercase tracking-wide text-muted">{isAdmin ? "Admin" : "Cuenta"}</p>
+          <div className="flex items-center gap-2">
+            {isAdmin ? (
+              <Tooltip content="Administración de usuarios del sistema" placement="top" wrapperClassName="block min-w-0 flex-1">
+                <Link
+                  href="/admin/users"
+                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition-colors duration-200 sm:px-3 sm:py-2 sm:text-sm ${
+                    pathname === "/admin/users"
+                      ? "bg-[var(--primary)] text-[var(--text-on-primary)]"
+                      : "hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]"
+                  }`}
+                >
+                  <Shield size={15} className="shrink-0" />
+                  Usuarios
+                </Link>
+              </Tooltip>
+            ) : null}
+            {logoutAction ? <LogoutButton action={logoutAction} /> : null}
+          </div>
         </div>
       ) : null}
     </motion.aside>

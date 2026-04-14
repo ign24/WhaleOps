@@ -5,7 +5,7 @@ general:
       file_tracer:
         _type: file
         output_path: $TRACES_PATH
-        project: cognitive-code-agent
+        project: cognitive-ops-agent
         mode: append
         enable_rolling: true
         max_file_size: 10485760
@@ -32,120 +32,12 @@ general:
         - "*"
 
 llms:
-  kimi_reader:
-    _type: nim
-    model_name: moonshotai/kimi-k2-instruct-0905
-    temperature: 0.3
-    top_p: 0.8
-    max_tokens: 4096
-    api_key: $NVIDIA_API_KEY
-
   devstral:
     _type: nim
     model_name: mistralai/devstral-2-123b-instruct-2512
-    temperature: 0.3
+    temperature: 0.1
     top_p: 0.9
     max_tokens: 32768
-    presence_penalty: 0.1
-    frequency_penalty: 0.1
-    api_key: $NVIDIA_API_KEY
-
-  # --- Additional coding models (tool calling confirmed) ---
-
-  qwen_coder:
-    _type: nim
-    model_name: qwen/qwen3-coder-480b-a35b-instruct
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    presence_penalty: 0.1
-    frequency_penalty: 0.1
-    api_key: $NVIDIA_API_KEY
-
-  deepseek_v3:
-    _type: nim
-    model_name: deepseek-ai/deepseek-v3.2
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  glm_4_7:
-    _type: nim
-    model_name: z-ai/glm4.7
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  step_3_5_flash:
-    _type: nim
-    model_name: stepfun-ai/step-3.5-flash
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  kimi_thinking:
-    _type: nim
-    model_name: moonshotai/kimi-k2-thinking
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  nemotron_super:
-    _type: nim
-    model_name: nvidia/llama-3.3-nemotron-super-49b-v1
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  nemotron_super_thinking:
-    _type: nim
-    model_name: nvidia/llama-3.3-nemotron-super-49b-v1
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    thinking: true
-    api_key: $NVIDIA_API_KEY
-
-  # --- Models without tool calling support (available for chat/direct config) ---
-
-  codestral:
-    _type: nim
-    model_name: mistralai/codestral-22b-instruct-v0.1
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  qwen_coder_32b:
-    _type: nim
-    model_name: qwen/qwen2.5-coder-32b-instruct
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  qwq:
-    _type: nim
-    model_name: qwen/qwq-32b
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    api_key: $NVIDIA_API_KEY
-
-  # --- Gemma family models (chat-focused) ---
-
-  gemma_4_31b_it:
-    _type: nim
-    model_name: google/gemma-4-31b-it
-    temperature: 0.3
-    top_p: 0.9
-    max_tokens: 32768
-    vision: true
     api_key: $NVIDIA_API_KEY
 
 embedders:
@@ -155,154 +47,23 @@ embedders:
     truncate: END
     api_key: $NVIDIA_API_KEY
 
-function_groups:
-  fs_tools:
-    _type: mcp_client
-    server:
-      transport: stdio
-      command: npx
-      args:
-        - "-y"
-        - "@modelcontextprotocol/server-filesystem"
-        - "/tmp/analysis"
-        - "/app/workspace"
-    include:
-      - directory_tree
-      - get_file_info
-      - list_directory
-      - read_multiple_files
-      - read_text_file
-      - search_files
-    tool_call_timeout: 30
-
-  fs_tools_write:
-    _type: mcp_client
-    server:
-      transport: stdio
-      command: npx
-      args:
-        - "-y"
-        - "@modelcontextprotocol/server-filesystem"
-        - "/tmp/analysis"
-        - "/app/workspace"
-    include:
-      - directory_tree
-      - get_file_info
-      - list_directory
-      - read_multiple_files
-      - read_text_file
-      - search_files
-      - create_directory
-      - write_file
-      - edit_file
-    tool_call_timeout: 30
-
-  github_tools:
-    _type: mcp_client
-    server:
-      transport: stdio
-      command: npx
-      args:
-        - "-y"
-        - "@modelcontextprotocol/server-github"
-    include:
-      - get_file_contents
-      - list_commits
-      - get_pull_request
-      - list_pull_requests
-      - get_issue
-      - list_issues
-      - search_repositories
-      - search_code
-    tool_call_timeout: 60
-
-  context7_tools:
-    _type: mcp_client
-    server:
-      transport: stdio
-      command: npx
-      args:
-        - "-y"
-        - "@upstash/context7-mcp"
-    include:
-      - resolve-library-id
-      - query-docs
-    tool_call_timeout: 30
-
 functions:
-  code_gen:
-    _type: code_generation
-    llm_name: devstral
-    programming_language: Python
-    description: Generate implementation snippets and concrete fix proposals.
+  list_containers:
+    _type: list_containers
+    description: >
+      List Docker containers on this host. Set all_containers=true to include
+      stopped/exited containers (default: running only).
 
-  refactor_gen:
-    _type: refactor_gen
-    llm_name: devstral
-    description: |
-      Refactor existing code following a detailed plan and expert guidelines.
-      Send a structured query containing <project_context>, <expert_guidelines>,
-      <refactoring_plan>, and <current_file> sections.
-      Returns the complete refactored file ready to be written with write_file.
+  get_container_logs:
+    _type: get_container_logs
+    description: >
+      Retrieve recent log output (with timestamps) for a Docker container.
+      Specify container name or ID and optionally the number of lines (default 50, max 500).
 
-  code_exec:
-    _type: code_execution
-    uri: http://sandbox:6000
-    timeout: 30.0
-    max_output_characters: 5000
-    description: Execute Python snippets in an isolated sandbox. The sandbox has access to /tmp/analysis and /app/workspace.
-
-  tavily_search:
-    _type: tavily_internet_search
-    max_results: 5
-
-  shell_execute:
-    _type: shell_execute
-
-  clone_repository:
-    _type: clone_repository
-
-  workspace_delete:
-    _type: workspace_delete
-
-  run_pytest:
-    _type: run_pytest
-  run_jest:
-    _type: run_jest
-  analyze_test_coverage:
-    _type: analyze_test_coverage
-  query_qa_knowledge:
-    _type: query_qa_knowledge
-
-  run_ruff:
-    _type: run_ruff
-  run_eslint:
-    _type: run_eslint
-  analyze_complexity:
-    _type: analyze_complexity
-  get_diff:
-    _type: get_diff
-
-  run_semgrep:
-    _type: run_semgrep
-  run_trivy:
-    _type: run_trivy
-  run_gitleaks:
-    _type: run_gitleaks
-  run_bandit:
-    _type: run_bandit
-
-  analyze_docstrings:
-    _type: analyze_docstrings
-  check_readme:
-    _type: check_readme
-  analyze_api_docs:
-    _type: analyze_api_docs
-
-  persist_findings:
-    _type: persist_findings
-  query_findings:
-    _type: query_findings
+  inspect_container:
+    _type: inspect_container
+    description: >
+      Inspect a Docker container: status, image, exit code, restart count, restart policy.
 
   schedule_task:
     _type: schedule_task
@@ -314,86 +75,26 @@ functions:
       Use action='cancel' with job_id to remove a schedule.
       Schedules persist across server restarts.
 
-  generate_report:
-    _type: generate_report
-    description: |
-      Generate a daily markdown report with findings summary, dependency observations,
-      and severity breakdown. Writes REPORT_OUTPUT_DIR/YYYY-MM-DD.md
+  save_note:
+    _type: save_note
+    description: >
+      Persist a structured note to the ops SQLite memory store.
+      Types: daily_summary, instruction, pattern, anomaly.
+      Optionally scope to a container_name.
 
-  spawn_agent:
-    _type: spawn_agent
-    llm_name: devstral
-    summary_llm_name: kimi_reader
-    default_max_iterations: 20
-    max_active_skills: 3
-    skill_registry_path: src/cognitive_code_agent/prompts/skills/registry.yml
-    allowed_tools:
-      - fs_tools
-      - fs_tools_write
-      - context7_tools
-      - run_semgrep
-      - run_trivy
-      - run_gitleaks
-      - run_bandit
-      - run_pytest
-      - run_jest
-      - analyze_test_coverage
-      - run_ruff
-      - run_eslint
-      - analyze_complexity
-      - analyze_docstrings
-      - analyze_api_docs
-      - code_gen
-      - refactor_gen
-      - code_exec
+  get_notes:
+    _type: get_notes
+    description: >
+      Retrieve recent notes from the ops SQLite memory store.
+      Filter by container_name and/or note_type. Returns most recent first.
 
-  code_agent:
-    _type: safe_tool_calling_agent
-    llm_name: devstral
-    max_history: 8
-    max_iterations: 40
-    tool_call_timeout_seconds: 900
-    prompt_base_path: src/cognitive_code_agent/prompts/system/base.md
-    skill_registry_path: src/cognitive_code_agent/prompts/skills/registry.yml
-    max_active_skills: 2
-    tool_loop_guard_threshold: 2
-    max_parallel_tool_calls: 3
-    handle_tool_errors: true
-    verbose: true
-    tool_names:
-      - spawn_agent
-      - run_pytest
-      - run_jest
-      - analyze_test_coverage
-      - code_exec
-      - run_ruff
-      - run_eslint
-      - analyze_complexity
-      - run_semgrep
-      - run_trivy
-      - run_gitleaks
-      - run_bandit
-      - analyze_docstrings
-      - analyze_api_docs
-      - code_gen
-      - refactor_gen
-      - tavily_search
-      - shell_execute
-      - clone_repository
-      - workspace_delete
-      - query_findings
-      - persist_findings
-      - fs_tools_write
-      - github_tools
-      - context7_tools
 
 workflow:
-  _type: safe_tool_calling_agent
-  # Top-level fields required by NAT (used as fallback if no modes defined)
+  _type: tool_calling_agent
   llm_name: devstral
   max_history: 8
-  max_iterations: 40
-  tool_call_timeout_seconds: 900
+  max_iterations: 20
+  tool_call_timeout_seconds: 30
   handle_tool_errors: true
   verbose: true
   prompt_base_path: src/cognitive_code_agent/prompts/system/base.md
@@ -402,95 +103,41 @@ workflow:
   tool_loop_guard_threshold: 2
   max_parallel_tool_calls: 3
   tool_names:
-    - spawn_agent
-    - run_pytest
-    - run_jest
-    - analyze_test_coverage
-    - code_exec
-    - run_ruff
-    - run_eslint
-    - analyze_complexity
-    - run_semgrep
-    - run_trivy
-    - run_gitleaks
-    - run_bandit
-    - analyze_docstrings
-    - analyze_api_docs
-    - code_gen
-    - refactor_gen
-    - tavily_search
-    - shell_execute
-    - clone_repository
-    - workspace_delete
-    - query_findings
-    - persist_findings
-    - fs_tools_write
-    - github_tools
-    - context7_tools
+    - list_containers
+    - get_container_logs
+    - inspect_container
+    - schedule_task
+    - save_note
+    - get_notes
 
-  per_tool_max_chars:
-    directory_tree: 5000
-    fs_tools__directory_tree: 5000
-
-  # --- Execution modes ---
-  default_mode: analyze
+  default_mode: ops
   modes:
-    analyze:
+    ops:
       llm_name: devstral
-      max_recovery_rounds: 3
-      switchable_models:
-        - devstral
-        - qwen_coder
-        - deepseek_v3
-        - glm_4_7
-        - step_3_5_flash
-        - kimi_thinking
-        - kimi_reader
-        - nemotron_super
-        - nemotron_super_thinking
-        - gemma_4_31b_it
-      prompt_path: src/cognitive_code_agent/prompts/system/analyze.md
-      max_iterations: 30
+      max_recovery_rounds: 2
+      prompt_path: src/cognitive_code_agent/prompts/system/ops.md
+      max_iterations: 20
       max_history: 8
-      tool_call_timeout_seconds: 900
+      tool_call_timeout_seconds: 30
       tool_loop_guard_threshold: 2
       max_parallel_tool_calls: 3
       max_tool_calls_per_request:
-        spawn_agent: 4
-        clone_repository: 2
-        persist_findings: 1
-      spawn_agent_allowed_tools:
-        - fs_tools
-        - github_tools
-        - context7_tools
-        - run_semgrep
-        - run_trivy
-        - run_gitleaks
-        - run_bandit
-        - run_pytest
-        - run_jest
-        - analyze_test_coverage
-        - run_ruff
-        - run_eslint
-        - analyze_complexity
-        - check_readme
-        - analyze_docstrings
-        - analyze_api_docs
+        list_containers: 3
+        get_container_logs: 5
+        inspect_container: 5
+        save_note: 10
+        get_notes: 3
       tool_names:
-        - spawn_agent
-        - fs_tools
-        - github_tools
-        - clone_repository
-        - workspace_delete
-        - persist_findings
-        - query_findings
+        - list_containers
+        - get_container_logs
+        - inspect_container
+        - schedule_task
+        - save_note
+        - get_notes
 
     chat:
-      llm_name: kimi_reader
+      llm_name: devstral
       max_recovery_rounds: 1
-      switchable_models:
-        - kimi_reader
-        - gemma_4_31b_it
       prompt_path: src/cognitive_code_agent/prompts/system/chat.md
       max_iterations: 3
       max_history: 4
@@ -498,66 +145,6 @@ workflow:
       tool_loop_guard_threshold: 2
       max_parallel_tool_calls: 3
       max_tool_calls_per_request:
-        query_findings: 2
-      spawn_agent_allowed_tools: []
+        get_notes: 2
       tool_names:
-        - query_findings
-        - fs_tools
-
-    execute:
-      llm_name: devstral
-      max_recovery_rounds: 3
-      switchable_models:
-        - devstral
-        - qwen_coder
-        - deepseek_v3
-        - glm_4_7
-        - step_3_5_flash
-        - kimi_thinking
-        - kimi_reader
-        - nemotron_super
-        - nemotron_super_thinking
-        - gemma_4_31b_it
-      prompt_path: src/cognitive_code_agent/prompts/system/execute.md
-      max_iterations: 40
-      max_history: 8
-      tool_call_timeout_seconds: 900
-      hitl_enabled: true
-      interrupt_timeout_seconds: 120
-      tool_loop_guard_threshold: 2
-      max_parallel_tool_calls: 3
-      max_tool_calls_per_request:
-        shell_execute: 8
-        persist_findings: 1
-      spawn_agent_allowed_tools:
-        - fs_tools
-        - fs_tools_write
-        - context7_tools
-        - run_ruff
-        - run_eslint
-        - run_pytest
-        - run_jest
-        - analyze_complexity
-        - code_gen
-        - refactor_gen
-        - code_exec
-      tool_names:
-        - schedule_task
-        - generate_report
-        - code_gen
-        - refactor_gen
-        - code_exec
-        - fs_tools_write
-        - run_ruff
-        - run_eslint
-        - run_pytest
-        - run_jest
-        - analyze_complexity
-        - query_findings
-        - persist_findings
-        - shell_execute
-        - clone_repository
-        - workspace_delete
-        - github_tools
-        - context7_tools
-        - tavily_search
+        - get_notes

@@ -34,15 +34,8 @@ import { buildActivityDedupeKey } from "@/lib/activity-dedupe";
 import { validateAttachment, formatFileSize, getLanguageTag } from "@/lib/file-attachment";
 import { ACTIVITY_UI_COPY } from "@/components/activity/activity-copy";
 import { stripLabelPrefixes } from "@/components/activity/session-meta";
-import { ModelSelectorChip } from "@/components/chat/model-selector";
-import { useInferencePrefs } from "@/hooks/use-inference-prefs";
-import {
-  getThinkingVariant,
-  getDefaultVisionModel,
-  getModelEntry,
-  resolveModelKey,
-} from "@/lib/model-registry";
-import { extractTextFromContent, buildVisionContent } from "@/lib/content-blocks";
+import { resolveModelKey } from "@/lib/model-registry";
+import { extractTextFromContent } from "@/lib/content-blocks";
 import {
   ActivityEntry,
   ActivityEntryKind,
@@ -51,7 +44,6 @@ import {
   GatewayChatMessage,
   MessageAttachment,
   TokenUsage,
-  TemperaturePreset,
   UiChatMessage,
 } from "@/types/chat";
 import { useSetAgentMood } from "@/contexts/agent-mood-context";
@@ -63,17 +55,15 @@ import {
   markNewConversationRouteReady,
 } from "@/lib/new-conversation-latency";
 
-const AGENT_MODES = ["analyze", "quick-review", "refactor", "execute"] as const;
-type AgentMode = (typeof AGENT_MODES)[number];
+const OPS_MODEL = "devstral";
+const OPS_TEMPERATURE_PRESET = "medium";
 
-const AGENT_MODE_LABELS: Record<AgentMode, string> = {
-  analyze: "Analyze",
-  "quick-review": "Quick Review",
-  refactor: "Refactor",
-  execute: "Execute",
-};
-
-const AGENT_MODE_STORAGE_KEY = "openclaw:agent-mode";
+const OPS_QUICK_ACTIONS = [
+  { label: "Containers activos", prompt: "¿Qué containers están corriendo ahora?" },
+  { label: "Estado general", prompt: "Dame un resumen del estado de todos los containers: cuántos corren, cuáles están detenidos y si hay reinicios recientes." },
+  { label: "Containers caídos", prompt: "¿Hay containers detenidos o en estado de error?" },
+  { label: "Ver logs", prompt: "Mostrar los últimos logs del container " },
+] as const;
 
 export type ChatPanelProps = {
   sessionKey: string;
@@ -493,23 +483,7 @@ export const ChatPanel = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isBootstrapNew = searchParams.get("bootstrap") === "new";
-  const { prefs, resolvedModelKey, setModel, setTemperaturePreset, toggleThinking } = useInferencePrefs();
   const setAgentMood = useSetAgentMood();
-  const modelSelectorOpenRef = useRef<(() => void) | null>(null);
-  const [agentMode, setAgentMode] = useState<AgentMode>("analyze");
-  useEffect(() => {
-    const stored = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
-    if (AGENT_MODES.includes(stored as AgentMode)) {
-      setAgentMode(stored as AgentMode);
-    }
-  }, []);
-  const cycleAgentMode = useCallback(() => {
-    setAgentMode((current) => {
-      const next = AGENT_MODES[(AGENT_MODES.indexOf(current) + 1) % AGENT_MODES.length];
-      localStorage.setItem(AGENT_MODE_STORAGE_KEY, next);
-      return next;
-    });
-  }, []);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(() => !isBootstrapNew);
@@ -523,7 +497,6 @@ export const ChatPanel = ({
     messagesContainerRef,
     messagesBottomRef,
     scrollToBottom,
-    isNearBottom,
     handleMessagesScroll,
   } = useChatScroll();
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
@@ -573,8 +546,8 @@ export const ChatPanel = ({
   const inputEstimatedTokens = useMemo(() => estimateTokensFromText(input), [input]);
 
   useEffect(() => {
-    onModelResolvedChange?.(resolvedModelKey);
-  }, [onModelResolvedChange, resolvedModelKey]);
+    onModelResolvedChange?.(OPS_MODEL);
+  }, [onModelResolvedChange]);
 
   const restoreDocumentTitle = useCallback(() => {
     if (typeof document === "undefined") {
@@ -651,7 +624,9 @@ export const ChatPanel = ({
     }
   }, [restoreDocumentTitle]);
 
-  const updateAutoScrollMagnet = useCallback(() => {
+  const handleMessagesContainerScroll = useCallback(() => {
+    handleMessagesScroll();
+
     const container = messagesContainerRef.current;
     if (!container) {
       shouldStickToBottomRef.current = true;
@@ -660,12 +635,7 @@ export const ChatPanel = ({
 
     const remaining = container.scrollHeight - container.scrollTop - container.clientHeight;
     shouldStickToBottomRef.current = remaining <= 70;
-  }, [messagesContainerRef]);
-
-  const handleMessagesContainerScroll = useCallback(() => {
-    handleMessagesScroll();
-    updateAutoScrollMagnet();
-  }, [handleMessagesScroll, updateAutoScrollMagnet]);
+  }, [handleMessagesScroll, messagesContainerRef]);
 
   const handleScrollToLatest = useCallback(() => {
     const win = safeWindow();
@@ -757,11 +727,9 @@ export const ChatPanel = ({
       return;
     }
 
-    shouldStickToBottomRef.current = isNearBottom();
-    if (shouldStickToBottomRef.current) {
-      scrollToBottom();
-    }
-  }, [isNearBottom, scrollToBottom, streamFollowActive]);
+    shouldStickToBottomRef.current = true;
+    scrollToBottom();
+  }, [scrollToBottom, streamFollowActive]);
 
   useEffect(() => {
     if (!streamFollowActive || !shouldStickToBottomRef.current) {
@@ -1072,12 +1040,6 @@ export const ChatPanel = ({
       }
     }
 
-    if (event.key === "Tab" && !input.trim()) {
-      event.preventDefault();
-      cycleAgentMode();
-      return;
-    }
-
     if (event.key === "Escape") {
       if (editingMessageIndex !== null) {
         event.preventDefault();
@@ -1146,8 +1108,8 @@ export const ChatPanel = ({
           body: JSON.stringify({
             sessionKey,
             messages: gatewayMessages,
-            model: resolvedModelKey,
-            temperaturePreset: prefs.temperaturePreset,
+            model: OPS_MODEL,
+            temperaturePreset: OPS_TEMPERATURE_PRESET,
           }),
         });
 
@@ -1177,8 +1139,8 @@ export const ChatPanel = ({
         let hasUsageEvent = false;
         let streamedAssistantContent = "";
         const seenActivityDedupeKeys = new Set<string>();
-        let activeModelForActivity = resolvedModelKey;
-        const requestedCanonicalModel = resolveModelKey(resolvedModelKey) ?? resolvedModelKey;
+        let activeModelForActivity = OPS_MODEL;
+        const requestedCanonicalModel = resolveModelKey(OPS_MODEL) ?? OPS_MODEL;
 
         const appendToken = (token: string) => {
           hasContent = true;
@@ -1452,8 +1414,6 @@ export const ChatPanel = ({
       notifyAgentCompletion,
       onActiveToolChange,
       onActivityEvent,
-      prefs.temperaturePreset,
-      resolvedModelKey,
       sessionKey,
     ],
   );
@@ -1548,12 +1508,7 @@ export const ChatPanel = ({
         const lang = getLanguageTag(attachedFile.name);
         outboundContent = `${trimmed}\n\n\`\`\`${lang}\n${attachedFile.content}\n\`\`\``.trim();
       } else {
-        const currentModelEntry = getModelEntry(resolvedModelKey);
-        if (currentModelEntry?.supportsVision) {
-          outboundContent = buildVisionContent(trimmed, attachedFile.content);
-        } else {
-          outboundContent = trimmed ? `${trimmed}\n\n(Imagen omitida — modelo actual no soporta vision)` : "(Imagen omitida — modelo actual no soporta vision)";
-        }
+        outboundContent = trimmed ? `${trimmed}\n\n(Imagen omitida — el agente ops no soporta vision)` : "(Imagen omitida — el agente ops no soporta vision)";
       }
       displayAttachments = [{ name: attachedFile.name, type: attachedFile.type }];
       setAttachedFile(null);
@@ -1564,21 +1519,6 @@ export const ChatPanel = ({
       const command = parts[0]?.toLowerCase() ?? "";
 
       if (!command) {
-        return;
-      }
-
-      if (command === "refactor" || command === "execute") {
-        await sendMessageToAgent(trimmed);
-        return;
-      }
-
-      if (command === "analyze" || command === "quick-review") {
-        const args = parts.slice(1).join(" ").trim();
-        const normalizedPrompt =
-          command === "analyze"
-            ? `full analysis ${args}`.trim()
-            : `quick review ${args}`.trim();
-        await sendMessageToAgent(normalizedPrompt);
         return;
       }
 
@@ -1596,10 +1536,7 @@ export const ChatPanel = ({
           "- `/status`: estado del gateway y sesión",
           "- `/reset`: limpia el chat actual en UI",
           "- `/stop`: detiene la respuesta en curso",
-          "- `/analyze <repo/url>`: envia solicitud de analisis completo al agente",
-          "- `/quick-review <repo/url>`: envia solicitud de analisis rapido al agente",
-          "- `/refactor <instruccion>`: envia solicitud de refactorizacion al agente (Devstral)",
-          "- `/execute <instruccion>`: ejecuta operaciones git (commit, push, PR)",
+          "- `/new`: crea una nueva conversación",
         ].join("\n"));
         return;
       }
@@ -1700,54 +1637,9 @@ export const ChatPanel = ({
         return;
       }
 
-      if (command === "models") {
-        setInput("");
-        modelSelectorOpenRef.current?.();
-        return;
-      }
-
-      if (command === "thinking") {
-        appendLocalUserCommand();
-        const thinkingVariant = getThinkingVariant(prefs.model);
-        if (thinkingVariant === null) {
-          pushAssistantMessage(
-            `Thinking solo está disponible en Nemotron Super. Cambiá el modelo con /models.`,
-            true,
-          );
-        } else {
-          toggleThinking();
-          const nextState = !prefs.thinking;
-          pushAssistantMessage(`Thinking ${nextState ? "activado" : "desactivado"}.`);
-        }
-        return;
-      }
-
-      if (command === "temperature") {
-        const preset = parts[1]?.toLowerCase();
-        if (preset === "low" || preset === "medium" || preset === "high") {
-          appendLocalUserCommand();
-          setTemperaturePreset(preset as TemperaturePreset);
-          pushAssistantMessage(`Temperatura configurada: ${preset}.`);
-        } else {
-          appendLocalUserCommand();
-          pushAssistantMessage(
-            "Presets disponibles:\n- `/temperature low` → 0.1 (determinista)\n- `/temperature medium` → 0.3 (balance)\n- `/temperature high` → 0.7 (creativo)",
-          );
-        }
-        return;
-      }
-
       appendLocalUserCommand();
       pushAssistantMessage("Comando desconocido. Usá `/help` para ver opciones disponibles.", true);
       return;
-    }
-
-    if (typeof outboundContent === "string") {
-      if (agentMode === "quick-review") {
-        outboundContent = `/analyze quick review ${outboundContent}`;
-      } else {
-        outboundContent = `/${agentMode} ${outboundContent}`;
-      }
     }
 
     await sendMessageToAgent(outboundContent, displayAttachments);
@@ -2124,24 +2016,17 @@ export const ChatPanel = ({
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={cycleAgentMode}
-              title="Tab para cambiar modo"
-              className="inline-flex items-center gap-1 rounded-md border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--text)] hover:bg-[var(--surface-hover)] sm:text-xs"
-            >
-              <span className="text-muted">Modo:</span>
-              {AGENT_MODE_LABELS[agentMode]}
-            </button>
-            <ModelSelectorChip
-              model={prefs.model}
-              thinking={prefs.thinking}
-              temperaturePreset={prefs.temperaturePreset}
-              onModelChange={setModel}
-              onThinkingToggle={toggleThinking}
-              onTemperatureChange={setTemperaturePreset}
-              openRef={modelSelectorOpenRef}
-            />
+            {OPS_QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                disabled={isSending}
+                onClick={() => setInput(action.prompt)}
+                className="inline-flex items-center rounded-md border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text)] disabled:opacity-40 sm:text-xs"
+              >
+                {action.label}
+              </button>
+            ))}
             <GatewayStatus activeTool={activeTool} onRetryConnection={handleRetryConnection} />
           </div>
           <div className="flex items-center gap-2">
