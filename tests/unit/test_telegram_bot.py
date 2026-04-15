@@ -188,3 +188,32 @@ def test_long_agent_response_is_truncated(monkeypatch: pytest.MonkeyPatch):
     sent_text = fake_bot.messages[-1][1]
     assert sent_text.endswith("\n[...]")
     assert len(sent_text) == 4006
+
+
+def test_chunk_with_choices_delta_content_is_extracted(monkeypatch: pytest.MonkeyPatch):
+    class Chunk:
+        def model_dump(self, mode: str = "json") -> dict:
+            return {"choices": [{"delta": {"content": "respuesta"}}]}
+
+    async def _stream_fn(_prompt: str, session_id: str):
+        async def _gen():
+            yield Chunk()
+
+        return _gen()
+
+    fake_bot = FakeBot()
+    gateway = TelegramGateway(fake_bot, _stream_fn, webhook_secret="s3cr3t")
+    client = _make_app(fake_bot, gateway)
+    monkeypatch.setattr("cognitive_code_agent.telegram.bot.is_allowed", lambda _chat_id: True)
+    monkeypatch.setattr(
+        "cognitive_code_agent.telegram.bot.get_session_id", lambda _chat_id: "telegram:123"
+    )
+
+    response = client.post(
+        "/telegram/webhook",
+        headers={"X-Telegram-Bot-Api-Secret-Token": "s3cr3t"},
+        json=_message_update(chat_id=123, text="hola"),
+    )
+
+    assert response.status_code == 200
+    assert fake_bot.messages[-1][1] == "respuesta"

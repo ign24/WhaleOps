@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import logging
 import os
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from fastapi import Request, Response
@@ -40,32 +40,74 @@ def _truncate_response(text: str) -> str:
 
 
 def _extract_text_from_chunk(chunk: Any) -> str:
-    if chunk is None:
-        return ""
-    if isinstance(chunk, str):
-        return chunk
-    if isinstance(chunk, dict):
+    def _extract_from_payload(payload: dict[str, Any]) -> str:
+        # OpenAI/NAT-like streaming chunks:
+        # {"choices":[{"delta":{"content":"..."}}]}
+        # {"choices":[{"message":{"content":"..."}}]}
+        choices = payload.get("choices")
+        if isinstance(choices, list):
+            parts: list[str] = []
+            for choice in choices:
+                if not isinstance(choice, dict):
+                    continue
+
+                delta = choice.get("delta")
+                if isinstance(delta, dict):
+                    content = delta.get("content")
+                    if isinstance(content, str):
+                        parts.append(content)
+
+                message = choice.get("message")
+                if isinstance(message, dict):
+                    content = message.get("content")
+                    if isinstance(content, str):
+                        parts.append(content)
+
+            if parts:
+                return "".join(parts)
+
         for key in ("text", "content", "message", "response"):
-            value = chunk.get(key)
+            value = payload.get(key)
             if isinstance(value, str):
                 return value
             if isinstance(value, list):
                 parts = [item.get("text", "") for item in value if isinstance(item, dict)]
                 return "".join(parts)
         return ""
+
+    if chunk is None:
+        return ""
+    if isinstance(chunk, str):
+        return chunk
+    if hasattr(chunk, "model_dump"):
+        try:
+            dumped = chunk.model_dump(mode="json")
+            if isinstance(dumped, dict):
+                return _extract_from_payload(dumped)
+        except Exception:
+            return ""
+    if isinstance(chunk, dict):
+        return _extract_from_payload(chunk)
     return ""
 
 
 async def _collect_agent_response(
-    builder_stream_fn: Callable[..., Awaitable[Any]],
+    builder_stream_fn: Callable[..., Any],
     prompt: str,
     session_id: str,
 ) -> str:
-    result = await builder_stream_fn(prompt, session_id=session_id)
+    result = builder_stream_fn(prompt, session_id=session_id)
+    if inspect.isawaitable(result):
+        result = await result
+
     if isinstance(result, str):
         return result
 
-    if inspect.isasyncgen(result) or hasattr(result, "__aiter__"):
+    if (
+        inspect.isasyncgen(result)
+        or isinstance(result, AsyncIterator)
+        or hasattr(result, "__aiter__")
+    ):
         parts: list[str] = []
         async for chunk in result:
             text = _extract_text_from_chunk(chunk)
@@ -97,7 +139,7 @@ class TelegramGateway:
     def __init__(
         self,
         bot: Any,
-        builder_stream_fn: Callable[..., Awaitable[Any]] | None,
+        builder_stream_fn: Callable[..., Any] | None,
         webhook_secret: str,
     ) -> None:
         self.bot = bot

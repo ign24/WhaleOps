@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from fastapi import Request
@@ -21,13 +22,41 @@ class _NoopBot:
         return None
 
 
+def _resolve_stream_fn(builder: Any) -> Callable[..., Any] | None:
+    stream_fn = getattr(builder, "stream_fn", None)
+    if callable(stream_fn):
+        return stream_fn
+
+    get_workflow = getattr(builder, "get_workflow", None)
+    if not callable(get_workflow):
+        logger.warning("telegram: builder.stream_fn unavailable and no get_workflow fallback")
+        return None
+
+    try:
+        workflow = get_workflow()
+    except Exception as exc:
+        logger.warning("telegram: failed to resolve workflow from builder: %s", exc)
+        return None
+
+    acall_stream = getattr(workflow, "acall_stream", None)
+    if not callable(acall_stream):
+        logger.warning("telegram: workflow.acall_stream unavailable")
+        return None
+
+    def _workflow_stream_fn(prompt: str, session_id: str) -> AsyncIterator[Any]:
+        # Session continuity is currently handled by the FastAPI/NAT session layer.
+        # Fallback path invokes workflow directly with prompt-only input.
+        return acall_stream(input_message=prompt)
+
+    logger.info("telegram: using workflow.acall_stream fallback (builder.stream_fn missing)")
+    return _workflow_stream_fn
+
+
 def register_telegram_routes(app: Any, builder: Any) -> None:
     if getattr(app.state, "cognitive_telegram_routes_registered", False):
         return
 
-    stream_fn = getattr(builder, "stream_fn", None)
-    if not callable(stream_fn):
-        stream_fn = None
+    stream_fn = _resolve_stream_fn(builder)
 
     bot = build_telegram_bot()
     gateway = TelegramGateway(
