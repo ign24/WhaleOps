@@ -32,9 +32,33 @@ general:
         - "*"
 
 llms:
-  llama33:
+  qwen_3_5_122b_a10b:
     _type: nim
-    model_name: meta/llama-3.3-70b-instruct
+    model_name: qwen/qwen3.5-122b-a10b
+    temperature: 0.1
+    top_p: 0.9
+    max_tokens: 32768
+    api_key: $NVIDIA_API_KEY
+
+  qwen_3_5_397b_a17b:
+    _type: nim
+    model_name: qwen/qwen3.5-397b-a17b
+    temperature: 0.1
+    top_p: 0.9
+    max_tokens: 32768
+    api_key: $NVIDIA_API_KEY
+
+  nemotron_3_super_120b_a12b:
+    _type: nim
+    model_name: nvidia/nemotron-3-super-120b-a12b
+    temperature: 0.1
+    top_p: 0.9
+    max_tokens: 32768
+    api_key: $NVIDIA_API_KEY
+
+  mistral_small_4_119b_2603:
+    _type: nim
+    model_name: mistralai/mistral-small-4-119b-2603
     temperature: 0.1
     top_p: 0.9
     max_tokens: 32768
@@ -91,7 +115,7 @@ functions:
 
 workflow:
   _type: tool_calling_agent
-  llm_name: llama33
+  llm_name: qwen_3_5_122b_a10b
   max_history: 8
   max_iterations: 20
   tool_call_timeout_seconds: 30
@@ -113,7 +137,12 @@ workflow:
   default_mode: ops
   modes:
     ops:
-      llm_name: llama33
+      llm_name: qwen_3_5_122b_a10b
+      switchable_models:
+        - qwen_3_5_122b_a10b
+        - qwen_3_5_397b_a17b
+        - nemotron_3_super_120b_a12b
+        - mistral_small_4_119b_2603
       max_recovery_rounds: 2
       prompt_path: src/cognitive_code_agent/prompts/system/ops.md
       max_iterations: 20
@@ -136,7 +165,12 @@ workflow:
         - get_notes
 
     chat:
-      llm_name: llama33
+      llm_name: qwen_3_5_122b_a10b
+      switchable_models:
+        - qwen_3_5_122b_a10b
+        - qwen_3_5_397b_a17b
+        - nemotron_3_super_120b_a12b
+        - mistral_small_4_119b_2603
       max_recovery_rounds: 1
       prompt_path: src/cognitive_code_agent/prompts/system/chat.md
       max_iterations: 3

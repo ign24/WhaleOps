@@ -100,7 +100,10 @@ export async function POST(request: Request) {
   }
 
   const messages = body.messages;
-  const requestedModel = typeof body.model === "string" && body.model.trim().length > 0 ? body.model : "devstral";
+  const requestedModel =
+    typeof body.model === "string" && body.model.trim().length > 0
+      ? body.model
+      : "qwen_3_5_122b_a10b";
   const userId =
     typeof session.user.id === "string" && session.user.id.trim().length > 0
       ? session.user.id

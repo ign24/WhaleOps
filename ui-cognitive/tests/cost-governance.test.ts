@@ -12,9 +12,12 @@ describe("cost-governance", () => {
     resetCostGovernanceStores();
   });
 
-  it("estimates zero cost for free models", () => {
-    const estimate = estimateRequestCost([{ role: "user", content: "hola" }], "nemotron_super");
-    expect(estimate.amountUsd).toBe(0);
+  it("estimates non-zero cost for paid models", () => {
+    const estimate = estimateRequestCost(
+      [{ role: "user", content: "hola" }],
+      "nemotron_3_super_120b_a12b",
+    );
+    expect(estimate.amountUsd).toBeGreaterThan(0);
     expect(estimate.estimatedPromptTokens).toBeGreaterThan(0);
   });
 
@@ -23,7 +26,7 @@ describe("cost-governance", () => {
     const result = evaluateBudgetPreflight({
       userId: "u-soft",
       sessionKey: "s-soft",
-      requestedModel: "devstral",
+      requestedModel: "mistral_small_4_119b_2603",
       estimatedRequestUsd: 0.015,
       config: {
         ...baseConfig,
@@ -42,7 +45,7 @@ describe("cost-governance", () => {
     const result = evaluateBudgetPreflight({
       userId: "u-hard",
       sessionKey: "s-hard",
-      requestedModel: "devstral",
+      requestedModel: "mistral_small_4_119b_2603",
       estimatedRequestUsd: 10,
       config: {
         ...baseConfig,
@@ -50,13 +53,13 @@ describe("cost-governance", () => {
         softLimitUsd: 0.01,
         hardLimitUsd: 0.02,
         hardLimitAction: "fallback",
-        fallbackModelKey: "nemotron_super",
+        fallbackModelKey: "qwen_3_5_122b_a10b",
       },
     });
 
     expect(result.allowed).toBe(true);
     expect(result.guardrailEvent).toBe("fallback");
-    expect(result.effectiveModel).toBe("nemotron_super");
-    expect(result.fallbackFromModel).toBe("devstral");
+    expect(result.effectiveModel).toBe("qwen_3_5_122b_a10b");
+    expect(result.fallbackFromModel).toBe("mistral_small_4_119b_2603");
   });
 });

@@ -66,7 +66,7 @@ const DEFAULT_CONFIG: CostGovernanceConfig = {
   softLimitUsd: 0.15,
   hardLimitUsd: 0.30,
   hardLimitAction: "fallback",
-  fallbackModelKey: "nemotron_super",
+  fallbackModelKey: "qwen_3_5_122b_a10b",
   policyEnvironment: getModelPolicyEnvironment(process.env.MODEL_POLICY_ENV),
 };
 
@@ -74,16 +74,11 @@ const MIN_BUDGET_LIMIT_USD = 0.00001;
 const MIN_BUDGET_GAP_USD = 0.00001;
 
 const MODEL_PRICING_PER_1K_TOKENS_USD: Record<string, { input: number; output: number }> = {
-  devstral: { input: 0.0028, output: 0.0080 },
-  qwen_coder: { input: 0.0080, output: 0.0200 },
-  deepseek_v3: { input: 0.0030, output: 0.0060 },
-  glm_4_7: { input: 0.0032, output: 0.0070 },
-  step_3_5_flash: { input: 0.0010, output: 0.0020 },
-  kimi_reader: { input: 0.0015, output: 0.0040 },
-  kimi_thinking: { input: 0.0090, output: 0.0250 },
-  nemotron_super: { input: 0, output: 0 },
-  nemotron_super_thinking: { input: 0, output: 0 },
-  gemma_4_31b_it: { input: 0.0100, output: 0.0200 },
+  qwen_3_5_122b_a10b: { input: 0.0080, output: 0.0200 },
+  qwen_3_5_397b_a17b: { input: 0.0120, output: 0.0300 },
+  nemotron_3_super_120b_a12b: { input: 0.0030, output: 0.0080 },
+  mistral_small_4_119b_2603: { input: 0.0060, output: 0.0160 },
+  nemotron_super_thinking: { input: 0.0030, output: 0.0080 },
 };
 
 const sessionBudgetStore = new Map<string, UsageTotals>();

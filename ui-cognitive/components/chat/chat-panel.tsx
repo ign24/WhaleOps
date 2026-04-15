@@ -55,7 +55,7 @@ import {
   markNewConversationRouteReady,
 } from "@/lib/new-conversation-latency";
 
-const OPS_MODEL = "devstral";
+const OPS_MODEL = "qwen_3_5_122b_a10b";
 const OPS_TEMPERATURE_PRESET = "medium";
 
 const OPS_QUICK_ACTIONS = [
