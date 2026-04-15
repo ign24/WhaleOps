@@ -20,6 +20,23 @@ Interfaz web para el ops-agent, construida con Next.js 16. Permite monitorear co
 - NAT backend via HTTP SSE
 - Bun para desarrollo local
 
+## Catalogo de modelos (alineado con backend)
+
+El selector de modelos usa `ui-cognitive/lib/model-registry.ts` y se mantiene alineado con
+`src/cognitive_code_agent/configs/config.yml` (`workflow.modes.*.switchable_models`).
+
+Catalogo canónico activo:
+
+- `qwen_3_5_122b_a10b` → `qwen/qwen3.5-122b-a10b`
+- `qwen_3_5_397b_a17b` → `qwen/qwen3.5-397b-a17b`
+- `nemotron_3_super_120b_a12b` → `nvidia/nemotron-3-super-120b-a12b`
+- `mistral_small_4_119b_2603` → `mistralai/mistral-small-4-119b-2603`
+
+Notas:
+
+- El backend resuelve runtimes por clave interna, no por display name.
+- Para sesiones históricas, `resolveModelKey()` mantiene aliases legacy hacia estas claves canónicas.
+
 ## Requisitos
 
 - Bun instalado

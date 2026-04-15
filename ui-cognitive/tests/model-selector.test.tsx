@@ -16,7 +16,7 @@ describe("ModelSelectorChip vendor badges", () => {
   it("shows vendor logo in chip for selected model", () => {
     render(
       <ModelSelectorChip
-        model="step_3_5_flash"
+        model="qwen_3_5_122b_a10b"
         thinking={false}
         temperaturePreset="medium"
         onModelChange={vi.fn()}
@@ -25,13 +25,13 @@ describe("ModelSelectorChip vendor badges", () => {
       />,
     );
 
-    expect(screen.getByAltText("StepFun logo")).toBeTruthy();
+    expect(screen.getByAltText("Qwen logo")).toBeTruthy();
   });
 
   it("shows vendor badge in dropdown model options", () => {
     render(
-      <ModelSelectorChip
-        model="glm_4_7"
+        <ModelSelectorChip
+        model="qwen_3_5_122b_a10b"
         thinking={false}
         temperaturePreset="medium"
         onModelChange={vi.fn()}
@@ -42,14 +42,15 @@ describe("ModelSelectorChip vendor badges", () => {
 
     fireEvent.click(screen.getByTitle("Cambiar modelo"));
 
-    expect(screen.getByText("StepFun")).toBeTruthy();
-    expect(screen.getByText("Z.ai")).toBeTruthy();
+    expect(screen.getAllByText("Qwen").length).toBeGreaterThan(0);
+    expect(screen.getByText("NVIDIA")).toBeTruthy();
+    expect(screen.getByText("Mistral AI")).toBeTruthy();
   });
 
   it("shows openness badges in dropdown options", () => {
     render(
-      <ModelSelectorChip
-        model="glm_4_7"
+        <ModelSelectorChip
+        model="qwen_3_5_122b_a10b"
         thinking={false}
         temperaturePreset="medium"
         onModelChange={vi.fn()}
@@ -59,8 +60,8 @@ describe("ModelSelectorChip vendor badges", () => {
     );
 
     fireEvent.click(screen.getByTitle("Cambiar modelo"));
-    expect(screen.getAllByText("Open Source").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Source Available").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Pesos abiertos").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Fuente disponible").length).toBeGreaterThan(0);
   });
 
   it("does not ask for cost confirmation when selecting model", () => {
@@ -69,8 +70,8 @@ describe("ModelSelectorChip vendor badges", () => {
     vi.stubGlobal("confirm", confirmSpy);
 
     render(
-      <ModelSelectorChip
-        model="glm_4_7"
+        <ModelSelectorChip
+        model="qwen_3_5_122b_a10b"
         thinking={false}
         temperaturePreset="medium"
         onModelChange={onModelChange}
@@ -80,10 +81,10 @@ describe("ModelSelectorChip vendor badges", () => {
     );
 
     fireEvent.click(screen.getByTitle("Cambiar modelo"));
-    fireEvent.click(screen.getByRole("option", { name: /DeepSeek V3\.2/i }));
+    fireEvent.click(screen.getByRole("option", { name: /Nemotron 3 Super 120B/i }));
 
     expect(confirmSpy).not.toHaveBeenCalled();
-    expect(onModelChange).toHaveBeenCalledWith("deepseek_v3");
+    expect(onModelChange).toHaveBeenCalledWith("nemotron_3_super_120b_a12b");
     vi.unstubAllGlobals();
   });
 
@@ -91,8 +92,8 @@ describe("ModelSelectorChip vendor badges", () => {
     process.env.NEXT_PUBLIC_MODEL_POLICY_ENV = "production";
 
     render(
-      <ModelSelectorChip
-        model="glm_4_7"
+        <ModelSelectorChip
+        model="qwen_3_5_122b_a10b"
         thinking={false}
         temperaturePreset="medium"
         onModelChange={vi.fn()}
@@ -102,7 +103,7 @@ describe("ModelSelectorChip vendor badges", () => {
     );
 
     fireEvent.click(screen.getByTitle("Cambiar modelo"));
-    const blockedOption = screen.getByRole("option", { name: /Kimi K2\.5 Thinking/i });
+    const blockedOption = screen.getByRole("option", { name: /Qwen 3\.5 397B/i });
     expect(blockedOption.getAttribute("disabled")).not.toBeNull();
   });
 });

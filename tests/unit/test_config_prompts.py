@@ -34,7 +34,7 @@ def test_workflow_uses_ops_defaults() -> None:
     workflow = config["workflow"]
 
     assert workflow["_type"] == "tool_calling_agent"
-    assert workflow["llm_name"] == "devstral"
+    assert workflow["llm_name"] == "qwen_3_5_122b_a10b"
     assert workflow["default_mode"] == "ops"
     assert workflow["prompt_base_path"] == "src/cognitive_code_agent/prompts/system/base.md"
     assert workflow["skill_registry_path"] == "src/cognitive_code_agent/prompts/skills/registry.yml"
@@ -48,6 +48,20 @@ def test_workflow_modes_are_ops_and_chat() -> None:
     assert set(modes.keys()) == {"ops", "chat"}
     assert modes["ops"]["prompt_path"] == "src/cognitive_code_agent/prompts/system/ops.md"
     assert modes["chat"]["prompt_path"] == "src/cognitive_code_agent/prompts/system/chat.md"
+
+
+def test_modes_define_switchable_model_catalog() -> None:
+    config = _load_config()
+    modes = config["workflow"]["modes"]
+    expected = [
+        "qwen_3_5_122b_a10b",
+        "qwen_3_5_397b_a17b",
+        "nemotron_3_super_120b_a12b",
+        "mistral_small_4_119b_2603",
+    ]
+
+    assert modes["ops"]["switchable_models"] == expected
+    assert modes["chat"]["switchable_models"] == expected
 
 
 def test_ops_mode_tools_and_limits_are_present() -> None:
@@ -76,15 +90,23 @@ def test_chat_mode_is_minimal() -> None:
     assert chat_mode["tool_names"] == ["get_notes"]
 
 
-def test_devstral_llm_config_exists() -> None:
+def test_canonical_llm_configs_exist() -> None:
     config = _load_config()
-    llm = config["llms"]["devstral"]
+    llms = config["llms"]
+    expected_model_names = {
+        "qwen_3_5_122b_a10b": "qwen/qwen3.5-122b-a10b",
+        "qwen_3_5_397b_a17b": "qwen/qwen3.5-397b-a17b",
+        "nemotron_3_super_120b_a12b": "nvidia/nemotron-3-super-120b-a12b",
+        "mistral_small_4_119b_2603": "mistralai/mistral-small-4-119b-2603",
+    }
 
-    assert llm["_type"] == "nim"
-    assert llm["model_name"] == "mistralai/devstral-2-123b-instruct-2512"
-    assert llm["temperature"] == 0.1
-    assert llm["top_p"] == 0.9
-    assert llm["max_tokens"] == 32768
+    for key, model_name in expected_model_names.items():
+        llm = llms[key]
+        assert llm["_type"] == "nim"
+        assert llm["model_name"] == model_name
+        assert llm["temperature"] == 0.1
+        assert llm["top_p"] == 0.9
+        assert llm["max_tokens"] == 32768
 
 
 def test_prompt_assets_exist() -> None:

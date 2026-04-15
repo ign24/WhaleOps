@@ -7,7 +7,7 @@ working:
   max_history: 8
   summarize_on_eviction: true
   summary_max_tokens: 400
-  summary_llm_name: devstral
+  summary_llm_name: qwen_3_5_122b_a10b
   compaction_char_threshold: 40000
   compaction_message_threshold: 30
   compaction_retain_recent: 8
