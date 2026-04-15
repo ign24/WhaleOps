@@ -52,9 +52,12 @@ async def _do_list_containers(client: docker.DockerClient, all_containers: bool)
             return f"No {scope} found on this host."
         lines = []
         for c in containers:
-            tags = ", ".join(c.image.tags) if c.image.tags else "untagged"
+            # Use attrs["Config"]["Image"] to avoid a second HTTP call to
+            # /images/{sha}/json — that call fails with 404 when the image has
+            # been deleted but the container still exists (orphan container).
+            image_name = c.attrs.get("Config", {}).get("Image", "unknown")
             status_label = " [STOPPED]" if c.status != "running" else ""
-            lines.append(f"  {c.name:<35} {c.status:<12} {c.short_id}  {tags}{status_label}")
+            lines.append(f"  {c.name:<35} {c.status:<12} {c.short_id}  {image_name}{status_label}")
         header = f"  {'NAME':<35} {'STATUS':<12} {'ID'}      IMAGE"
         return header + "\n" + "\n".join(lines)
     except docker.errors.DockerException as exc:
@@ -90,12 +93,12 @@ async def _do_inspect_container(client: docker.DockerClient, container: str) -> 
         host_cfg = attrs.get("HostConfig", {})
         restart_count = attrs.get("RestartCount", 0)
         restart_policy = host_cfg.get("RestartPolicy", {}).get("Name", "none")
-        tags = ", ".join(c.image.tags) if c.image.tags else "untagged"
+        image_name = c.attrs.get("Config", {}).get("Image", "unknown")
         exit_code = state.get("ExitCode", 0)
         return (
             f"Container:     {c.name}\n"
             f"ID:            {c.short_id}\n"
-            f"Image:         {tags}\n"
+            f"Image:         {image_name}\n"
             f"Status:        {state.get('Status', 'unknown')}\n"
             f"Running:       {state.get('Running', False)}\n"
             f"Exit code:     {exit_code}\n"
